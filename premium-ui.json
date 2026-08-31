@@ -1,0 +1,8 @@
+{
+  "profile": "product",
+  "sourceRoots": ["."],
+  "locale": "zh-CN",
+  "ownership": {
+    "Date": "native"
+  }
+}

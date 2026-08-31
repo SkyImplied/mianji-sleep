@@ -20,6 +20,7 @@
 
   var $ = function (selector) { return document.querySelector(selector); };
   var $$ = function (selector) { return Array.from(document.querySelectorAll(selector)); };
+  var pendingConfirmAction = null;
 
   function loadProfileName() {
     try {
@@ -177,7 +178,12 @@
     $("#profile-name").value = state.profileName;
     $("#bedtime-goal").value = state.bedtimeGoal;
     $("#home-goal-legend").innerHTML = "<i></i>目标 ≤" + state.bedtimeGoal + " · 7–9h";
-    document.title = state.profileName + "专属 · 日常健康手帐";
+    updateDocumentTitle();
+  }
+
+  function updateDocumentTitle() {
+    var viewNames = { today: "今日", trends: "趋势", history: "记录" };
+    document.title = (viewNames[state.activeView] || "今日") + " · " + state.profileName + "专属";
   }
 
   function latestRecord() {
@@ -247,16 +253,13 @@
     var periodCalcium = state.calciumRecords.filter(function (r) { return r.date >= periodStart && r.date <= periodEnd; });
     var durations = data.map(sleepMinutes);
     var avg = average(durations);
-    var avgQuality = average(data.map(function (r) { return Number(r.quality) || 3; }));
     var onTimeRate = data.length ? Math.round(data.filter(isSleepOnTime).length / data.length * 100) : null;
     $("#trend-average").textContent = avg === null ? "--" : compactDuration(Math.round(avg));
-    $("#trend-average-delta").textContent = onTimeRate === null ? "暂无入睡记录" : "按时入睡 " + onTimeRate + "%";
-    $("#trend-quality").textContent = avgQuality === null ? "--" : avgQuality.toFixed(1) + "/5";
-    $("#trend-consistency").textContent = consistencyLabel(data);
+    $("#trend-average-delta").textContent = onTimeRate === null ? "暂无记录" : "按时 " + onTimeRate + "%";
     $("#trend-poop").textContent = periodPoop.length + " 次";
-    $("#trend-poop-days").textContent = new Set(periodPoop.map(function (r) { return r.date; })).size + " 天有记录";
+    $("#trend-poop-days").textContent = new Set(periodPoop.map(function (r) { return r.date; })).size + " 天记录";
     $("#trend-calcium").textContent = periodCalcium.reduce(function (sum, r) { return sum + Number(r.dose || 0); }, 0) + " mg";
-    $("#trend-calcium-days").textContent = new Set(periodCalcium.map(function (r) { return r.date; })).size + " 天有记录";
+    $("#trend-calcium-days").textContent = new Set(periodCalcium.map(function (r) { return r.date; })).size + " 天记录";
     renderCalendar();
   }
 
@@ -306,21 +309,6 @@
     }
   }
 
-  function consistencyLabel(records) {
-    if (records.length < 2) return "--";
-    var adjusted = records.map(function (r) {
-      var minutes = timeToMinutes(r.bedtime);
-      return minutes < 12 * 60 ? minutes + 24 * 60 : minutes;
-    });
-    var mean = average(adjusted);
-    var variance = average(adjusted.map(function (n) { return Math.pow(n - mean, 2); }));
-    var deviation = Math.sqrt(variance);
-    if (deviation <= 30) return "很规律";
-    if (deviation <= 60) return "较规律";
-    if (deviation <= 90) return "有波动";
-    return "需调整";
-  }
-
   function formatShortDate(key) {
     var d = parseDateKey(key);
     return (d.getMonth() + 1) + "月" + d.getDate() + "日";
@@ -333,7 +321,6 @@
     state.poopRecords.forEach(function (r) { events.push({ type: "poop", date: r.date, time: r.time, data: r }); });
     state.calciumRecords.forEach(function (r) { events.push({ type: "calcium", date: r.date, time: r.time, data: r }); });
     events.sort(function (a, b) { return (b.date + b.time).localeCompare(a.date + a.time); });
-    $("#history-count").textContent = events.length ? "共 " + events.length + " 条日常记录" : "还没有记录";
     if (!events.length) {
       list.innerHTML = '<div class="empty-state"><div class="empty-moon"></div><h3>从今天开始</h3><p>睡眠、噗噗和补钙，<br>小小记录也会变成有用的节律。</p></div>';
       return;
@@ -374,12 +361,14 @@
     state.activeView = name;
     $$(".view").forEach(function (view) { view.classList.toggle("active", view.id === "view-" + name); });
     $$(".bottom-nav button").forEach(function (button) { button.classList.toggle("active", button.dataset.view === name); });
+    updateDocumentTitle();
     window.scrollTo(0, 0);
   }
 
   function showSheet(id) {
     var backdrop = $(id);
     window.clearTimeout(backdrop._closeTimer);
+    backdrop._returnFocus = document.activeElement;
     backdrop.classList.remove("closing");
     backdrop.hidden = false;
     document.body.style.overflow = "hidden";
@@ -442,8 +431,25 @@
     backdrop._closeTimer = window.setTimeout(function () {
       backdrop.hidden = true;
       backdrop.classList.remove("closing");
-      if ($("#record-backdrop").hidden && $("#poop-backdrop").hidden && $("#calcium-backdrop").hidden && $("#settings-backdrop").hidden) document.body.style.overflow = "";
+      if ($("#record-backdrop").hidden && $("#poop-backdrop").hidden && $("#calcium-backdrop").hidden && $("#settings-backdrop").hidden && $("#confirm-backdrop").hidden) document.body.style.overflow = "";
+      if (backdrop._returnFocus && backdrop._returnFocus.isConnected && backdrop._returnFocus.offsetParent !== null) backdrop._returnFocus.focus();
     }, 170);
+  }
+
+  function openConfirm(title, message, actionLabel, action) {
+    $("#confirm-title").textContent = title;
+    $("#confirm-message").textContent = message;
+    $("#confirm-action").textContent = actionLabel;
+    pendingConfirmAction = action;
+    showSheet("#confirm-backdrop");
+    window.setTimeout(function () { $("#confirm-cancel").focus(); }, 0);
+  }
+
+  function acceptConfirm() {
+    var action = pendingConfirmAction;
+    pendingConfirmAction = null;
+    closeSheet("#confirm-backdrop");
+    if (action) action();
   }
 
   function updateDurationPreview() {
@@ -489,12 +495,13 @@
   function deleteCurrentEntry() {
     var id = $("#edit-id").value;
     if (!id) return;
-    if (!window.confirm("确定删除这条睡眠记录吗？")) return;
-    state.records = state.records.filter(function (r) { return r.id !== id; });
-    saveRecords();
-    closeSheet("#record-backdrop");
-    render();
-    showToast("记录已删除");
+    openConfirm("删除睡眠记录", "这条睡眠记录删除后无法恢复。", "删除", function () {
+      state.records = state.records.filter(function (r) { return r.id !== id; });
+      saveRecords();
+      closeSheet("#record-backdrop");
+      render();
+      showToast("记录已删除");
+    });
   }
 
   function handlePoopSubmit(event) {
@@ -538,22 +545,26 @@
 
   function deletePoopEntry() {
     var id = $("#poop-edit-id").value;
-    if (!id || !window.confirm("确定删除这条噗噗记录吗？")) return;
-    state.poopRecords = state.poopRecords.filter(function (r) { return r.id !== id; });
-    saveWellnessRecords();
-    closeSheet("#poop-backdrop");
-    render();
-    showToast("噗噗记录已删除");
+    if (!id) return;
+    openConfirm("删除噗噗记录", "这条噗噗记录删除后无法恢复。", "删除", function () {
+      state.poopRecords = state.poopRecords.filter(function (r) { return r.id !== id; });
+      saveWellnessRecords();
+      closeSheet("#poop-backdrop");
+      render();
+      showToast("噗噗记录已删除");
+    });
   }
 
   function deleteCalciumEntry() {
     var id = $("#calcium-edit-id").value;
-    if (!id || !window.confirm("确定删除这条补钙记录吗？")) return;
-    state.calciumRecords = state.calciumRecords.filter(function (r) { return r.id !== id; });
-    saveWellnessRecords();
-    closeSheet("#calcium-backdrop");
-    render();
-    showToast("补钙记录已删除");
+    if (!id) return;
+    openConfirm("删除补钙记录", "这条补钙记录删除后无法恢复。", "删除", function () {
+      state.calciumRecords = state.calciumRecords.filter(function (r) { return r.id !== id; });
+      saveWellnessRecords();
+      closeSheet("#calcium-backdrop");
+      render();
+      showToast("补钙记录已删除");
+    });
   }
 
   function exportData() {
@@ -714,27 +725,46 @@
     $("#import-data").addEventListener("change", function (event) { importData(event.target.files[0]); });
     $("#clear-data").addEventListener("click", function () {
       if (!state.records.length && !state.poopRecords.length && !state.calciumRecords.length) return showToast("当前没有可清空的数据");
-      if (!window.confirm("确定清空全部日常记录吗？此操作无法撤销。")) return;
-      state.records = [];
-      state.poopRecords = [];
-      state.calciumRecords = [];
-      saveRecords();
-      saveWellnessRecords();
-      render();
-      closeSheet("#settings-backdrop");
-      showToast("全部记录已清空");
+      openConfirm("清空全部记录", "睡眠、噗噗和补钙记录都会永久删除，且无法恢复。", "全部删除", function () {
+        state.records = [];
+        state.poopRecords = [];
+        state.calciumRecords = [];
+        saveRecords();
+        saveWellnessRecords();
+        render();
+        closeSheet("#settings-backdrop");
+        showToast("全部记录已清空");
+      });
     });
-    ["#record-backdrop", "#poop-backdrop", "#calcium-backdrop", "#settings-backdrop"].forEach(function (id) {
+    $("#confirm-cancel").addEventListener("click", function () {
+      pendingConfirmAction = null;
+      closeSheet("#confirm-backdrop");
+    });
+    $("#confirm-action").addEventListener("click", acceptConfirm);
+    ["#record-backdrop", "#poop-backdrop", "#calcium-backdrop", "#settings-backdrop", "#confirm-backdrop"].forEach(function (id) {
       $(id).addEventListener("click", function (event) {
-        if (event.target === $(id)) closeSheet(id);
+        if (event.target === $(id)) {
+          if (id === "#confirm-backdrop") pendingConfirmAction = null;
+          closeSheet(id);
+        }
       });
     });
     document.addEventListener("keydown", function (event) {
-      if (event.key !== "Escape") return;
-      closeSheet("#record-backdrop");
-      closeSheet("#poop-backdrop");
-      closeSheet("#calcium-backdrop");
-      closeSheet("#settings-backdrop");
+      var openBackdrop = ["#confirm-backdrop", "#settings-backdrop", "#calcium-backdrop", "#poop-backdrop", "#record-backdrop"].map($).find(function (item) { return !item.hidden && !item.classList.contains("closing"); });
+      if (!openBackdrop) return;
+      if (event.key === "Escape") {
+        event.preventDefault();
+        if (openBackdrop.id === "confirm-backdrop") pendingConfirmAction = null;
+        closeSheet("#" + openBackdrop.id);
+        return;
+      }
+      if (event.key !== "Tab") return;
+      var focusable = Array.from(openBackdrop.querySelectorAll('button:not([disabled]):not([hidden]), input:not([disabled]):not([type="hidden"]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])')).filter(function (item) { return item.offsetParent !== null; });
+      if (!focusable.length) return;
+      var first = focusable[0];
+      var last = focusable[focusable.length - 1];
+      if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus(); }
+      else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }
     });
   }
 

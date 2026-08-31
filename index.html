@@ -7,7 +7,7 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <title>薯条脆脆专属 · 日常健康手帐</title>
-  <link rel="stylesheet" href="styles.css?v=4">
+  <link rel="stylesheet" href="styles.css?v=5">
 </head>
 <body>
   <div class="app-shell">
@@ -97,14 +97,10 @@
           <button data-period="30">30 天</button>
           <button data-period="90">90 天</button>
         </div>
-        <div class="stat-strip">
-          <article><small>平均时长</small><strong id="trend-average">--</strong><em id="trend-average-delta">暂无对比</em></article>
-          <article><small>平均质量</small><strong id="trend-quality">--</strong><em>主观评分</em></article>
-          <article><small>规律度</small><strong id="trend-consistency">--</strong><em>入睡波动</em></article>
-        </div>
-        <div class="wellness-stat-grid">
-          <article><span class="wellness-badge poop-mark">噗</span><div><small>本周期噗噗</small><strong id="trend-poop">0 次</strong><em id="trend-poop-days">0 天有记录</em></div></article>
-          <article><span class="wellness-badge calcium-mark">Ca</span><div><small>本周期补钙</small><strong id="trend-calcium">0 mg</strong><em id="trend-calcium-days">0 天有记录</em></div></article>
+        <div class="trend-summary-grid">
+          <article class="trend-summary-card"><span class="summary-mark sleep-summary-mark">☾</span><small>睡眠</small><strong id="trend-average">--</strong><em id="trend-average-delta">暂无记录</em></article>
+          <article class="trend-summary-card"><span class="summary-mark poop-mark">噗</span><small>噗噗</small><strong id="trend-poop">0 次</strong><em id="trend-poop-days">0 天记录</em></article>
+          <article class="trend-summary-card"><span class="summary-mark calcium-mark">Ca</span><small>补钙</small><strong id="trend-calcium">0 mg</strong><em id="trend-calcium-days">0 天记录</em></article>
         </div>
         <article class="calendar-card">
           <div class="calendar-head">
@@ -123,10 +119,7 @@
       </section>
 
       <section class="view" id="view-history" aria-labelledby="nav-history">
-        <div class="page-heading history-heading">
-          <div><p class="eyebrow">时间线</p><h2>日常记录</h2><p id="history-count">还没有记录</p></div>
-        </div>
-        <div class="history-list" id="history-list"></div>
+        <div class="history-list" id="history-list" aria-label="日常记录时间线"></div>
       </section>
     </main>
 
@@ -147,7 +140,7 @@
     <section class="bottom-sheet" role="dialog" aria-modal="true" aria-labelledby="sheet-title">
       <div class="sheet-handle"></div>
       <div class="sheet-header"><div><p class="eyebrow" id="sheet-eyebrow">新增</p><h2 id="sheet-title">记录睡眠</h2></div><button class="close-button" id="close-sheet" aria-label="关闭">×</button></div>
-      <form id="sleep-form">
+      <form id="sleep-form" novalidate>
         <input type="hidden" id="edit-id">
         <label class="form-field"><span>睡眠日期</span><input type="date" id="sleep-date" required></label>
         <div class="time-grid">
@@ -163,7 +156,7 @@
           <input type="radio" name="quality" value="4" id="q4"><label for="q4"><span>🙂</span><small>良好</small></label>
           <input type="radio" name="quality" value="5" id="q5"><label for="q5"><span>✨</span><small>很好</small></label>
         </div></fieldset>
-        <label class="form-field"><span>备注 <small>选填</small></span><textarea id="sleep-note" rows="2" maxlength="80" placeholder="例如：睡前喝了咖啡、夜间醒来一次"></textarea></label>
+        <label class="form-field"><span>备注 <small>选填</small></span><textarea id="sleep-note" rows="2" maxlength="80" style="resize: none" placeholder="例如：睡前喝了咖啡、夜间醒来一次"></textarea></label>
         <button class="save-button" type="submit">保存记录</button>
         <button class="delete-button" type="button" id="delete-entry" hidden>删除这条记录</button>
       </form>
@@ -193,7 +186,7 @@
     <section class="bottom-sheet compact-sheet" role="dialog" aria-modal="true" aria-labelledby="poop-title">
       <div class="sheet-handle"></div>
       <div class="sheet-header"><div><p class="eyebrow" id="poop-eyebrow">新增</p><h2 id="poop-title">记录噗噗</h2></div><button class="close-button" id="close-poop" aria-label="关闭">×</button></div>
-      <form id="poop-form">
+      <form id="poop-form" novalidate>
         <input type="hidden" id="poop-edit-id">
         <div class="form-two-col">
           <label class="form-field"><span>日期</span><input type="date" id="poop-date" required></label>
@@ -205,7 +198,7 @@
           <input type="radio" name="poop-condition" value="偏软" id="p-soft"><label for="p-soft">偏软</label>
           <input type="radio" name="poop-condition" value="不适" id="p-unwell"><label for="p-unwell">不适</label>
         </div></fieldset>
-        <label class="form-field"><span>备注 <small>选填</small></span><textarea id="poop-note" rows="2" maxlength="80" placeholder="例如：很顺畅、肚子有点不舒服"></textarea></label>
+        <label class="form-field"><span>备注 <small>选填</small></span><textarea id="poop-note" rows="2" maxlength="80" style="resize: none" placeholder="例如：很顺畅、肚子有点不舒服"></textarea></label>
         <button class="save-button" type="submit">保存噗噗记录</button>
         <button class="delete-button" type="button" id="delete-poop" hidden>删除这条记录</button>
       </form>
@@ -216,7 +209,7 @@
     <section class="bottom-sheet compact-sheet" role="dialog" aria-modal="true" aria-labelledby="calcium-title">
       <div class="sheet-handle"></div>
       <div class="sheet-header"><div><p class="eyebrow" id="calcium-eyebrow">新增</p><h2 id="calcium-title">记录补钙</h2></div><button class="close-button" id="close-calcium" aria-label="关闭">×</button></div>
-      <form id="calcium-form">
+      <form id="calcium-form" novalidate>
         <input type="hidden" id="calcium-edit-id">
         <div class="form-two-col">
           <label class="form-field"><span>日期</span><input type="date" id="calcium-date" required></label>
@@ -224,14 +217,23 @@
         </div>
         <label class="form-field"><span>补钙剂量（mg）</span><input type="number" id="calcium-dose" min="1" max="3000" step="1" value="500" inputmode="numeric" required></label>
         <div class="dose-presets" aria-label="常用剂量"><button type="button" data-dose="300">300 mg</button><button type="button" data-dose="500">500 mg</button><button type="button" data-dose="600">600 mg</button></div>
-        <label class="form-field"><span>备注 <small>选填</small></span><textarea id="calcium-note" rows="2" maxlength="80" placeholder="例如：钙片、牛奶、饭后服用"></textarea></label>
+        <label class="form-field"><span>备注 <small>选填</small></span><textarea id="calcium-note" rows="2" maxlength="80" style="resize: none" placeholder="例如：钙片、牛奶、饭后服用"></textarea></label>
         <button class="save-button" type="submit">保存补钙记录</button>
         <button class="delete-button" type="button" id="delete-calcium" hidden>删除这条记录</button>
       </form>
     </section>
   </div>
 
+  <div class="sheet-backdrop confirm-backdrop" id="confirm-backdrop" hidden>
+    <section class="confirm-dialog" role="alertdialog" aria-modal="true" aria-labelledby="confirm-title" aria-describedby="confirm-message">
+      <span class="confirm-mark" aria-hidden="true">!</span>
+      <h2 id="confirm-title">确认操作</h2>
+      <p id="confirm-message"></p>
+      <div class="confirm-actions"><button type="button" id="confirm-cancel">取消</button><button type="button" class="confirm-danger" id="confirm-action">删除</button></div>
+    </section>
+  </div>
+
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
-  <script src="app.js?v=4"></script>
+  <script src="app.js?v=5"></script>
 </body>
 </html>
