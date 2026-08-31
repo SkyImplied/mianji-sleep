@@ -463,10 +463,19 @@
   }
 
   function switchView(name) {
+    if (state.activeView === name) return;
     state.activeView = name;
     $$(".view").forEach(function (view) { view.classList.toggle("active", view.id === "view-" + name); });
     $$(".bottom-nav button").forEach(function (button) { button.classList.toggle("active", button.dataset.view === name); });
-    window.scrollTo({ top: 0, behavior: "smooth" });
+    window.scrollTo(0, 0);
+  }
+
+  function showSheet(id) {
+    var backdrop = $(id);
+    window.clearTimeout(backdrop._closeTimer);
+    backdrop.classList.remove("closing");
+    backdrop.hidden = false;
+    document.body.style.overflow = "hidden";
   }
 
   function openRecordSheet(record) {
@@ -483,8 +492,7 @@
     if (radio) radio.checked = true;
     $("#delete-entry").hidden = !isEdit;
     updateDurationPreview();
-    $("#record-backdrop").hidden = false;
-    document.body.style.overflow = "hidden";
+    showSheet("#record-backdrop");
   }
 
   function currentTimeValue() {
@@ -504,8 +512,7 @@
     var radio = $('input[name="poop-condition"][value="' + condition + '"]');
     if (radio) radio.checked = true;
     $("#delete-poop").hidden = !isEdit;
-    $("#poop-backdrop").hidden = false;
-    document.body.style.overflow = "hidden";
+    showSheet("#poop-backdrop");
   }
 
   function openCalciumSheet(record) {
@@ -518,13 +525,18 @@
     $("#calcium-dose").value = isEdit ? Number(record.dose) : 500;
     $("#calcium-note").value = isEdit ? (record.note || "") : "";
     $("#delete-calcium").hidden = !isEdit;
-    $("#calcium-backdrop").hidden = false;
-    document.body.style.overflow = "hidden";
+    showSheet("#calcium-backdrop");
   }
 
   function closeSheet(id) {
-    $(id).hidden = true;
-    if ($("#record-backdrop").hidden && $("#poop-backdrop").hidden && $("#calcium-backdrop").hidden && $("#settings-backdrop").hidden) document.body.style.overflow = "";
+    var backdrop = $(id);
+    if (backdrop.hidden || backdrop.classList.contains("closing")) return;
+    backdrop.classList.add("closing");
+    backdrop._closeTimer = window.setTimeout(function () {
+      backdrop.hidden = true;
+      backdrop.classList.remove("closing");
+      if ($("#record-backdrop").hidden && $("#poop-backdrop").hidden && $("#calcium-backdrop").hidden && $("#settings-backdrop").hidden) document.body.style.overflow = "";
+    }, 170);
   }
 
   function updateDurationPreview() {
@@ -710,7 +722,6 @@
     $("#quick-add").addEventListener("click", function () { openRecordSheet(); });
     $("#quick-poop").addEventListener("click", function () { openPoopSheet(); });
     $("#quick-calcium").addEventListener("click", function () { openCalciumSheet(); });
-    $("#history-add").addEventListener("click", function () { openRecordSheet(); });
     $("#close-sheet").addEventListener("click", function () { closeSheet("#record-backdrop"); });
     $("#sleep-form").addEventListener("submit", handleSubmit);
     $("#bedtime").addEventListener("input", updateDurationPreview);
@@ -765,8 +776,7 @@
     $("#open-settings").addEventListener("click", function () {
       $("#profile-name").value = state.profileName;
       $("#bedtime-goal").value = state.bedtimeGoal;
-      $("#settings-backdrop").hidden = false;
-      document.body.style.overflow = "hidden";
+      showSheet("#settings-backdrop");
     });
     $("#save-profile").addEventListener("click", function () {
       var nextName = $("#profile-name").value.trim().slice(0, 12);
