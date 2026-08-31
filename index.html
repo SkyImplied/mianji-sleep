@@ -1,0 +1,173 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#f4f3ef">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <title>眠迹 · 睡眠记录</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="app-shell">
+    <header class="topbar">
+      <div>
+        <p class="eyebrow" id="today-label"></p>
+        <h1>眠迹</h1>
+      </div>
+      <button class="icon-button" id="open-settings" aria-label="数据管理">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.4a1.8 1.8 0 0 1 1.7 1.2l.2.6a7.1 7.1 0 0 1 1.6.9l.6-.1a1.8 1.8 0 0 1 1.8.8l.7 1.2a1.8 1.8 0 0 1-.1 2l-.4.5a7.3 7.3 0 0 1 0 1.9l.4.5a1.8 1.8 0 0 1 .1 2l-.7 1.2a1.8 1.8 0 0 1-1.8.8l-.6-.1a7.1 7.1 0 0 1-1.6.9l-.2.6a1.8 1.8 0 0 1-1.7 1.2h-1.4a1.8 1.8 0 0 1-1.7-1.2l-.2-.6a7.1 7.1 0 0 1-1.6-.9l-.6.1a1.8 1.8 0 0 1-1.8-.8L4 14.9a1.8 1.8 0 0 1 .1-2l.4-.5a7.3 7.3 0 0 1 0-1.9l-.4-.5A1.8 1.8 0 0 1 4 8l.7-1.2A1.8 1.8 0 0 1 6.5 6l.6.1a7.1 7.1 0 0 1 1.6-.9l.2-.6a1.8 1.8 0 0 1 1.7-1.2H12Z"/><circle cx="11.3" cy="11.5" r="2.5"/></svg>
+      </button>
+    </header>
+
+    <main>
+      <section class="view active" id="view-today" aria-labelledby="nav-today">
+        <article class="hero-card">
+          <div class="hero-glow"></div>
+          <div class="hero-copy">
+            <span class="status-pill" id="hero-status">今晚还未记录</span>
+            <p class="hero-kicker">最近一次睡眠</p>
+            <div class="duration-display">
+              <strong id="hero-hours">--</strong>
+              <span>小时</span>
+              <strong id="hero-minutes">--</strong>
+              <span>分钟</span>
+            </div>
+            <p class="hero-range" id="hero-range">记录后，在这里看见你的休息节律</p>
+          </div>
+          <div class="moon-orbit" aria-hidden="true">
+            <span class="star star-a"></span><span class="star star-b"></span><span class="star star-c"></span>
+            <div class="moon"></div>
+          </div>
+        </article>
+
+        <button class="primary-action" id="quick-add">
+          <span class="plus">＋</span>
+          <span><b>记录睡眠</b><small>约 10 秒完成</small></span>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg>
+        </button>
+
+        <section class="section-block">
+          <div class="section-heading">
+            <div><p class="eyebrow">本周概览</p><h2>你的睡眠节律</h2></div>
+            <button class="text-button" data-go="trends">查看趋势</button>
+          </div>
+          <div class="metric-grid">
+            <article class="metric-card">
+              <span class="metric-icon warm"><svg viewBox="0 0 24 24"><path d="M20 15.6A8.5 8.5 0 0 1 8.4 4a8.5 8.5 0 1 0 11.6 11.6Z"/></svg></span>
+              <p>平均睡眠</p><strong id="metric-average">--</strong><small>近 7 天</small>
+            </article>
+            <article class="metric-card">
+              <span class="metric-icon green"><svg viewBox="0 0 24 24"><path d="m5 12 4 4L19 6"/></svg></span>
+              <p>达标天数</p><strong id="metric-goal">0 天</strong><small>目标 ≥ 7小时</small>
+            </article>
+          </div>
+        </section>
+
+        <section class="section-block">
+          <div class="section-heading compact">
+            <div><p class="eyebrow">最近 7 天</p><h2>睡眠时长</h2></div>
+            <span class="legend"><i></i>目标 7–9h</span>
+          </div>
+          <article class="week-chart-card">
+            <div class="chart-zone"><span class="goal-band"></span><div class="bars" id="home-bars"></div></div>
+            <div class="chart-labels" id="home-labels"></div>
+          </article>
+        </section>
+      </section>
+
+      <section class="view" id="view-trends" aria-labelledby="nav-trends">
+        <div class="page-heading"><p class="eyebrow">数据洞察</p><h2>睡眠趋势</h2><p>了解节律，比追求单日完美更重要。</p></div>
+        <div class="period-switch" role="tablist" aria-label="统计周期">
+          <button class="active" data-period="7">7 天</button>
+          <button data-period="30">30 天</button>
+          <button data-period="90">90 天</button>
+        </div>
+        <div class="stat-strip">
+          <article><small>平均时长</small><strong id="trend-average">--</strong><em id="trend-average-delta">暂无对比</em></article>
+          <article><small>平均质量</small><strong id="trend-quality">--</strong><em>主观评分</em></article>
+          <article><small>规律度</small><strong id="trend-consistency">--</strong><em>入睡波动</em></article>
+        </div>
+        <article class="trend-card">
+          <div class="card-title-row"><div><small>睡眠时长</small><h3 id="trend-chart-title">最近 7 天</h3></div><span class="goal-chip">目标 8h</span></div>
+          <div class="line-chart" id="line-chart"></div>
+        </article>
+        <article class="insight-card" id="insight-card">
+          <span class="insight-mark">✦</span>
+          <div><small>眠迹观察</small><h3 id="insight-title">开始记录你的睡眠</h3><p id="insight-text">连续记录几天后，这里会出现关于睡眠时长与规律度的个性化提示。</p></div>
+        </article>
+        <article class="timing-card">
+          <div class="section-heading compact"><div><p class="eyebrow">作息时间</p><h2>平均入睡与起床</h2></div></div>
+          <div class="timing-row"><span><i class="night-dot"></i>平均入睡</span><strong id="avg-bedtime">--:--</strong></div>
+          <div class="timing-line"><span id="timing-span"></span></div>
+          <div class="timing-row"><span><i class="morning-dot"></i>平均起床</span><strong id="avg-waketime">--:--</strong></div>
+        </article>
+      </section>
+
+      <section class="view" id="view-history" aria-labelledby="nav-history">
+        <div class="page-heading history-heading">
+          <div><p class="eyebrow">时间线</p><h2>睡眠记录</h2><p id="history-count">还没有记录</p></div>
+          <button class="round-add" id="history-add" aria-label="添加记录">＋</button>
+        </div>
+        <div class="history-list" id="history-list"></div>
+      </section>
+    </main>
+
+    <nav class="bottom-nav" aria-label="主导航">
+      <button class="active" id="nav-today" data-view="today">
+        <svg viewBox="0 0 24 24"><path d="M4 10.5 12 4l8 6.5V20h-5v-6H9v6H4v-9.5Z"/></svg><span>今日</span>
+      </button>
+      <button id="nav-trends" data-view="trends">
+        <svg viewBox="0 0 24 24"><path d="M4 19V9m6 10V5m6 14v-7m4 7H2"/></svg><span>趋势</span>
+      </button>
+      <button id="nav-history" data-view="history">
+        <svg viewBox="0 0 24 24"><path d="M5 4h14v16H5zM8 8h8m-8 4h8m-8 4h5"/></svg><span>记录</span>
+      </button>
+    </nav>
+  </div>
+
+  <div class="sheet-backdrop" id="record-backdrop" hidden>
+    <section class="bottom-sheet" role="dialog" aria-modal="true" aria-labelledby="sheet-title">
+      <div class="sheet-handle"></div>
+      <div class="sheet-header"><div><p class="eyebrow" id="sheet-eyebrow">新增</p><h2 id="sheet-title">记录睡眠</h2></div><button class="close-button" id="close-sheet" aria-label="关闭">×</button></div>
+      <form id="sleep-form">
+        <input type="hidden" id="edit-id">
+        <label class="form-field"><span>睡眠日期</span><input type="date" id="sleep-date" required></label>
+        <div class="time-grid">
+          <label class="time-field"><span><i class="night-dot"></i>入睡时间</span><input type="time" id="bedtime" value="23:30" required></label>
+          <div class="time-arrow">→</div>
+          <label class="time-field"><span><i class="morning-dot"></i>起床时间</span><input type="time" id="waketime" value="07:30" required></label>
+        </div>
+        <div class="duration-preview"><span>预计睡眠</span><strong id="duration-preview">8 小时 00 分</strong></div>
+        <fieldset class="quality-field"><legend>睡眠质量</legend><div class="quality-options">
+          <input type="radio" name="quality" value="1" id="q1"><label for="q1"><span>😫</span><small>很差</small></label>
+          <input type="radio" name="quality" value="2" id="q2"><label for="q2"><span>😕</span><small>较差</small></label>
+          <input type="radio" name="quality" value="3" id="q3" checked><label for="q3"><span>😌</span><small>一般</small></label>
+          <input type="radio" name="quality" value="4" id="q4"><label for="q4"><span>🙂</span><small>良好</small></label>
+          <input type="radio" name="quality" value="5" id="q5"><label for="q5"><span>✨</span><small>很好</small></label>
+        </div></fieldset>
+        <label class="form-field"><span>备注 <small>选填</small></span><textarea id="sleep-note" rows="2" maxlength="80" placeholder="例如：睡前喝了咖啡、夜间醒来一次"></textarea></label>
+        <button class="save-button" type="submit">保存记录</button>
+        <button class="delete-button" type="button" id="delete-entry" hidden>删除这条记录</button>
+      </form>
+    </section>
+  </div>
+
+  <div class="sheet-backdrop" id="settings-backdrop" hidden>
+    <section class="bottom-sheet settings-sheet" role="dialog" aria-modal="true" aria-labelledby="settings-title">
+      <div class="sheet-handle"></div>
+      <div class="sheet-header"><div><p class="eyebrow">本地数据</p><h2 id="settings-title">数据管理</h2></div><button class="close-button" id="close-settings" aria-label="关闭">×</button></div>
+      <p class="settings-copy">记录仅保存在当前浏览器中。你可以导出备份，或从备份文件恢复。</p>
+      <div class="settings-actions">
+        <button id="export-data"><span>导出 JSON 备份</span><small>保存全部睡眠记录</small></button>
+        <label class="import-label"><span>导入 JSON 备份</span><small>合并同日期记录</small><input type="file" id="import-data" accept=".json,application/json"></label>
+        <button class="danger-row" id="clear-data"><span>清空全部数据</span><small>此操作无法撤销</small></button>
+      </div>
+    </section>
+  </div>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  <script src="app.js"></script>
+</body>
+</html>
