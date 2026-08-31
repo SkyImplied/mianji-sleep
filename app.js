@@ -69,6 +69,13 @@
     return y + "-" + m + "-" + d;
   }
 
+  function backupFileName() {
+    var safeName = String(state.profileName || "薯条脆脆")
+      .replace(/[\\/:*?"<>|]/g, "")
+      .trim() || "薯条脆脆";
+    return safeName + "健康记录_" + localDateKey(new Date()) + ".json";
+  }
+
   function parseDateKey(key) {
     var parts = key.split("-").map(Number);
     return new Date(parts[0], parts[1] - 1, parts[2]);
@@ -177,6 +184,7 @@
     $("#display-name").textContent = state.profileName;
     $("#profile-name").value = state.profileName;
     $("#bedtime-goal").value = state.bedtimeGoal;
+    $("#backup-file-name").textContent = backupFileName();
     $("#home-goal-legend").innerHTML = "<i></i>目标 ≤" + state.bedtimeGoal + " · 7–9h";
     updateDocumentTitle();
   }
@@ -567,16 +575,45 @@
     });
   }
 
-  function exportData() {
-    var payload = { app: "眠迹", version: 4, profileName: state.profileName, bedtimeGoal: state.bedtimeGoal, exportedAt: new Date().toISOString(), records: state.records, poopRecords: state.poopRecords, calciumRecords: state.calciumRecords };
-    var blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
-    var url = URL.createObjectURL(blob);
+  function downloadBackup(file) {
+    var url = URL.createObjectURL(file);
     var link = document.createElement("a");
     link.href = url;
-    link.download = "眠迹睡眠记录_" + localDateKey(new Date()) + ".json";
+    link.download = file.name;
+    document.body.appendChild(link);
     link.click();
-    URL.revokeObjectURL(url);
-    showToast("备份已导出");
+    link.remove();
+    window.setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
+    showToast("备份已下载");
+  }
+
+  async function exportData() {
+    var payload = { app: "薯条脆脆健康记录", version: 5, profileName: state.profileName, bedtimeGoal: state.bedtimeGoal, exportedAt: new Date().toISOString(), records: state.records, poopRecords: state.poopRecords, calciumRecords: state.calciumRecords };
+    var file = new File([JSON.stringify(payload, null, 2)], backupFileName(), { type: "application/json" });
+
+    try {
+      if (typeof window.showSaveFilePicker === "function") {
+        var handle = await window.showSaveFilePicker({
+          suggestedName: file.name,
+          types: [{ description: "健康记录备份", accept: { "application/json": [".json"] } }]
+        });
+        var writable = await handle.createWritable();
+        await writable.write(file);
+        await writable.close();
+        showToast("备份已保存到所选文件夹");
+        return;
+      }
+
+      if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
+        await navigator.share({ files: [file], title: file.name });
+        showToast("备份已交给系统处理");
+        return;
+      }
+    } catch (error) {
+      if (error && error.name === "AbortError") return;
+    }
+
+    downloadBackup(file);
   }
 
   function importData(file) {
@@ -777,7 +814,15 @@
     }, { passive: false });
   }
 
+  function requestPersistentStorage() {
+    if (!navigator.storage || typeof navigator.storage.persist !== "function") return;
+    navigator.storage.persist().catch(function () {
+      /* Local backup remains available when persistent storage is not granted. */
+    });
+  }
+
   lockViewportZoom();
   bindEvents();
   render();
+  requestPersistentStorage();
 })();

@@ -4,10 +4,15 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no, viewport-fit=cover">
   <meta name="theme-color" content="#f7f1e8">
+  <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="健康记录">
   <title>薯条脆脆专属 · 日常健康手帐</title>
-  <link rel="stylesheet" href="styles.css?v=5">
+  <link rel="manifest" href="manifest.webmanifest?v=1">
+  <link rel="apple-touch-icon" sizes="180x180" href="icons/apple-touch-icon.png?v=1">
+  <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png?v=1">
+  <link rel="stylesheet" href="styles.css?v=6">
 </head>
 <body>
   <div class="app-shell">
@@ -173,9 +178,9 @@
         <label class="preference-label" for="bedtime-goal"><span>最晚入睡时间</span><small>晚于此时间标记为未达标</small></label>
         <div class="bedtime-goal-row"><input type="time" id="bedtime-goal" value="22:00"><span>默认 22:00</span></div>
       </div>
-      <p class="settings-copy">日常记录仅保存在当前浏览器中。你可以导出备份，或从备份文件恢复。</p>
+      <p class="settings-copy">记录默认保存在当前浏览器或主屏幕应用中。建议定期把备份存入 iCloud 云盘或“在我的 iPhone 上”，避免清除网站数据或删除应用后丢失。</p>
       <div class="settings-actions">
-        <button id="export-data"><span>导出 JSON 备份</span><small>保存全部日常记录</small></button>
+        <button id="export-data"><span>保存备份到文件</span><small id="backup-file-name">薯条脆脆健康记录_2026-08-31.json</small></button>
         <label class="import-label"><span>导入 JSON 备份</span><small>恢复三类记录与专属名称</small><input type="file" id="import-data" accept=".json,application/json"></label>
         <button class="danger-row" id="clear-data"><span>清空全部数据</span><small>此操作无法撤销</small></button>
       </div>
@@ -234,6 +239,6 @@
   </div>
 
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
-  <script src="app.js?v=5"></script>
+  <script src="app.js?v=6"></script>
 </body>
 </html>
