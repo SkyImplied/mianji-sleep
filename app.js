@@ -12,8 +12,11 @@
     poopRecords: loadPoopRecords(),
     calciumRecords: loadCalciumRecords(),
     profileName: loadProfileName(),
+    bedtimeGoal: loadBedtimeGoal(),
     period: 7,
-    activeView: "today"
+    activeView: "today",
+    calendarMetric: "sleep",
+    calendarMonth: new Date(new Date().getFullYear(), new Date().getMonth(), 1)
   };
 
   var $ = function (selector) { return document.querySelector(selector); };
@@ -25,6 +28,15 @@
       return String(saved.name || "薯条脆脆").trim().slice(0, 12) || "薯条脆脆";
     } catch (error) {
       return "薯条脆脆";
+    }
+  }
+
+  function loadBedtimeGoal() {
+    try {
+      var saved = JSON.parse(localStorage.getItem(PROFILE_KEY) || "{}");
+      return /^\d{2}:\d{2}$/.test(saved.bedtimeGoal || "") ? saved.bedtimeGoal : "22:00";
+    } catch (error) {
+      return "22:00";
     }
   }
 
@@ -47,7 +59,7 @@
   }
 
   function saveProfileName() {
-    localStorage.setItem(PROFILE_KEY, JSON.stringify({ name: state.profileName }));
+    localStorage.setItem(PROFILE_KEY, JSON.stringify({ name: state.profileName, bedtimeGoal: state.bedtimeGoal }));
   }
 
   function localDateKey(date) {
@@ -107,6 +119,15 @@
     return wake - bed;
   }
 
+  function nightMinutes(value) {
+    var minutes = timeToMinutes(value);
+    return minutes < 12 * 60 ? minutes + 24 * 60 : minutes;
+  }
+
+  function isSleepOnTime(record) {
+    return nightMinutes(record.bedtime) <= nightMinutes(state.bedtimeGoal);
+  }
+
   function durationParts(minutes) {
     return { hours: Math.floor(minutes / 60), minutes: minutes % 60 };
   }
@@ -155,6 +176,8 @@
     $("#today-label").textContent = (now.getMonth() + 1) + "月" + now.getDate() + "日 · 星期" + weekdayLabel(now);
     $("#display-name").textContent = state.profileName;
     $("#profile-name").value = state.profileName;
+    $("#bedtime-goal").value = state.bedtimeGoal;
+    $("#home-goal-legend").innerHTML = "<i></i>目标 ≤" + state.bedtimeGoal + " · 7–9h";
     document.title = state.profileName + "专属 · 日常健康手帐";
   }
 
@@ -167,7 +190,8 @@
     var latest = latestRecord();
     if (latest) {
       var duration = durationParts(sleepMinutes(latest));
-      $("#hero-status").textContent = latest.date === localDateKey(new Date()) ? "今日已记录" : "最近记录 · " + formatShortDate(latest.date);
+      var sleepGoalStatus = isSleepOnTime(latest) ? "按时入睡" : "晚于 " + state.bedtimeGoal;
+      $("#hero-status").textContent = latest.date === localDateKey(new Date()) ? "今日已记录 · " + sleepGoalStatus : "最近记录 · " + formatShortDate(latest.date);
       $("#hero-hours").textContent = duration.hours;
       $("#hero-minutes").textContent = String(duration.minutes).padStart(2, "0");
       $("#hero-range").textContent = latest.bedtime + " 入睡 · " + latest.waketime + " 起床 · " + qualityStars(latest.quality);
@@ -206,7 +230,8 @@
       var pct = Math.max(5, Math.min(100, minutes / MAX_CHART_MINUTES * 100));
       var classes = ["bar"];
       if (!record) classes.push("empty");
-      if (minutes >= 7 * 60 && minutes <= 9 * 60) classes.push("on-target");
+      if (record && minutes >= 7 * 60 && minutes <= 9 * 60 && isSleepOnTime(record)) classes.push("on-target");
+      if (record && !isSleepOnTime(record)) classes.push("late");
       if (i === 0) classes.push("today");
       barHtml += '<span class="' + classes.join(" ") + '" style="height:' + pct + '%" data-value="' + (record ? (minutes / 60).toFixed(1) + "h" : "") + '"></span>';
       labelHtml += "<span>" + (i === 0 ? "今" : "周" + weekdayLabel(day)) + "</span>";
@@ -224,7 +249,9 @@
     var durations = data.map(sleepMinutes);
     var avg = average(durations);
     var avgQuality = average(data.map(function (r) { return Number(r.quality) || 3; }));
+    var onTimeRate = data.length ? Math.round(data.filter(isSleepOnTime).length / data.length * 100) : null;
     $("#trend-average").textContent = avg === null ? "--" : compactDuration(Math.round(avg));
+    $("#trend-average-delta").textContent = onTimeRate === null ? "暂无入睡记录" : "按时入睡 " + onTimeRate + "%";
     $("#trend-quality").textContent = avgQuality === null ? "--" : avgQuality.toFixed(1) + "/5";
     $("#trend-consistency").textContent = consistencyLabel(data);
     $("#trend-poop").textContent = periodPoop.length + " 次";
@@ -235,6 +262,53 @@
     renderTrendChart(data);
     renderTiming(data);
     renderInsight(data);
+    renderCalendar();
+  }
+
+  function renderCalendar() {
+    var month = state.calendarMonth;
+    var year = month.getFullYear();
+    var monthIndex = month.getMonth();
+    $("#calendar-month-title").textContent = year + "年" + (monthIndex + 1) + "月";
+    var first = new Date(year, monthIndex, 1);
+    var mondayOffset = (first.getDay() + 6) % 7;
+    var gridStart = shiftDate(first, -mondayOffset);
+    var todayKey = localDateKey(new Date());
+    var cells = "";
+    for (var i = 0; i < 42; i += 1) {
+      var date = shiftDate(gridStart, i);
+      var key = localDateKey(date);
+      var inMonth = date.getMonth() === monthIndex;
+      var classes = ["calendar-day"];
+      var detail = "无记录";
+      if (!inMonth) classes.push("outside");
+      if (key === todayKey) classes.push("today-cell");
+      if (inMonth && state.calendarMetric === "sleep") {
+        var sleepRecord = state.records.find(function (r) { return r.date === key; });
+        if (sleepRecord) {
+          var onTime = isSleepOnTime(sleepRecord);
+          classes.push(onTime ? "sleep-good" : "sleep-late");
+          detail = sleepRecord.bedtime + " 入睡 · " + (onTime ? "按时" : "晚于 " + state.bedtimeGoal);
+        }
+      } else if (inMonth && state.calendarMetric === "poop") {
+        var poopCount = state.poopRecords.filter(function (r) { return r.date === key; }).length;
+        if (poopCount) classes.push("heat-" + Math.min(3, poopCount));
+        detail = poopCount ? "噗噗 " + poopCount + " 次" : "无记录";
+      } else if (inMonth && state.calendarMetric === "calcium") {
+        var calciumTotal = state.calciumRecords.filter(function (r) { return r.date === key; }).reduce(function (sum, r) { return sum + Number(r.dose || 0); }, 0);
+        if (calciumTotal) classes.push(calciumTotal >= 600 ? "heat-3" : calciumTotal >= 400 ? "heat-2" : "heat-1");
+        detail = calciumTotal ? "补钙 " + calciumTotal + " mg" : "无记录";
+      }
+      cells += '<span class="' + classes.join(" ") + '" title="' + (date.getMonth() + 1) + "月" + date.getDate() + "日 · " + detail + '"><b>' + date.getDate() + "</b></span>";
+    }
+    $("#calendar-grid").innerHTML = cells;
+    if (state.calendarMetric === "sleep") {
+      $("#calendar-legend").innerHTML = '<span><i></i>无记录</span><span><i class="sleep-good"></i>按时（≤ ' + state.bedtimeGoal + '）</span><span><i class="sleep-late"></i>晚睡</span>';
+    } else if (state.calendarMetric === "poop") {
+      $("#calendar-legend").innerHTML = '<span><i></i>无记录</span><span><i class="heat-1"></i>1 次</span><span><i class="heat-2"></i>2 次</span><span><i class="heat-3"></i>3 次以上</span>';
+    } else {
+      $("#calendar-legend").innerHTML = '<span><i></i>无记录</span><span><i class="heat-1"></i>1–399mg</span><span><i class="heat-2"></i>400–599mg</span><span><i class="heat-3"></i>≥600mg</span>';
+    }
   }
 
   function consistencyLabel(records) {
@@ -564,7 +638,7 @@
   }
 
   function exportData() {
-    var payload = { app: "眠迹", version: 3, profileName: state.profileName, exportedAt: new Date().toISOString(), records: state.records, poopRecords: state.poopRecords, calciumRecords: state.calciumRecords };
+    var payload = { app: "眠迹", version: 4, profileName: state.profileName, bedtimeGoal: state.bedtimeGoal, exportedAt: new Date().toISOString(), records: state.records, poopRecords: state.poopRecords, calciumRecords: state.calciumRecords };
     var blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
     var url = URL.createObjectURL(blob);
     var link = document.createElement("a");
@@ -610,8 +684,9 @@
         state.calciumRecords = state.calciumRecords.concat(calciumRecords);
         if (!Array.isArray(parsed) && parsed.profileName) {
           state.profileName = String(parsed.profileName).trim().slice(0, 12) || state.profileName;
-          saveProfileName();
         }
+        if (!Array.isArray(parsed) && /^\d{2}:\d{2}$/.test(parsed.bedtimeGoal || "")) state.bedtimeGoal = parsed.bedtimeGoal;
+        saveProfileName();
         saveRecords();
         saveWellnessRecords();
         render();
@@ -672,8 +747,24 @@
         renderTrends();
       });
     });
+    $$("[data-calendar-metric]").forEach(function (button) {
+      button.addEventListener("click", function () {
+        state.calendarMetric = button.dataset.calendarMetric;
+        $$("[data-calendar-metric]").forEach(function (item) { item.classList.toggle("active", item === button); });
+        renderCalendar();
+      });
+    });
+    $("#calendar-prev").addEventListener("click", function () {
+      state.calendarMonth = new Date(state.calendarMonth.getFullYear(), state.calendarMonth.getMonth() - 1, 1);
+      renderCalendar();
+    });
+    $("#calendar-next").addEventListener("click", function () {
+      state.calendarMonth = new Date(state.calendarMonth.getFullYear(), state.calendarMonth.getMonth() + 1, 1);
+      renderCalendar();
+    });
     $("#open-settings").addEventListener("click", function () {
       $("#profile-name").value = state.profileName;
+      $("#bedtime-goal").value = state.bedtimeGoal;
       $("#settings-backdrop").hidden = false;
       document.body.style.overflow = "hidden";
     });
@@ -684,10 +775,16 @@
         $("#profile-name").focus();
         return;
       }
+      var nextGoal = $("#bedtime-goal").value;
+      if (!/^\d{2}:\d{2}$/.test(nextGoal)) {
+        showToast("请选择最晚入睡时间");
+        return;
+      }
       state.profileName = nextName;
+      state.bedtimeGoal = nextGoal;
       saveProfileName();
-      renderHeader();
-      showToast("专属名称已更新");
+      render();
+      showToast("专属设置已更新");
     });
     $("#profile-name").addEventListener("keydown", function (event) {
       if (event.key === "Enter") {

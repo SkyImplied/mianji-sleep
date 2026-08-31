@@ -82,7 +82,7 @@
         <section class="section-block">
           <div class="section-heading compact">
             <div><p class="eyebrow">最近 7 天</p><h2>睡眠时长</h2></div>
-            <span class="legend"><i></i>目标 7–9h</span>
+            <span class="legend" id="home-goal-legend"><i></i>目标 ≤22:00 · 7–9h</span>
           </div>
           <article class="week-chart-card">
             <div class="chart-zone"><span class="goal-band"></span><div class="bars" id="home-bars"></div></div>
@@ -107,6 +107,20 @@
           <article><span class="wellness-badge poop-mark">噗</span><div><small>本周期噗噗</small><strong id="trend-poop">0 次</strong><em id="trend-poop-days">0 天有记录</em></div></article>
           <article><span class="wellness-badge calcium-mark">Ca</span><div><small>本周期补钙</small><strong id="trend-calcium">0 mg</strong><em id="trend-calcium-days">0 天有记录</em></div></article>
         </div>
+        <article class="calendar-card">
+          <div class="calendar-head">
+            <div><small>月度回顾</small><h3 id="calendar-month-title">2026年8月</h3></div>
+            <div class="month-controls"><button id="calendar-prev" aria-label="上一个月">‹</button><button id="calendar-next" aria-label="下一个月">›</button></div>
+          </div>
+          <div class="calendar-metric-switch" role="tablist" aria-label="月度指标">
+            <button class="active" data-calendar-metric="sleep">睡眠</button>
+            <button data-calendar-metric="poop">噗噗</button>
+            <button data-calendar-metric="calcium">补钙</button>
+          </div>
+          <div class="calendar-weekdays"><span>一</span><span>二</span><span>三</span><span>四</span><span>五</span><span>六</span><span>日</span></div>
+          <div class="calendar-grid" id="calendar-grid"></div>
+          <div class="calendar-legend" id="calendar-legend"></div>
+        </article>
         <article class="trend-card">
           <div class="card-title-row"><div><small>睡眠时长</small><h3 id="trend-chart-title">最近 7 天</h3></div><span class="goal-chip">目标 8h</span></div>
           <div class="line-chart" id="line-chart"></div>
@@ -178,7 +192,9 @@
       <div class="sheet-header"><div><p class="eyebrow">本地数据</p><h2 id="settings-title">数据管理</h2></div><button class="close-button" id="close-settings" aria-label="关闭">×</button></div>
       <div class="profile-settings">
         <label for="profile-name"><span>专属名称</span><small>显示在首页，最多 12 个字</small></label>
-        <div class="profile-input-row"><input type="text" id="profile-name" maxlength="12" placeholder="例如：薯条脆脆"><button id="save-profile" type="button">保存</button></div>
+        <div class="profile-input-row"><input type="text" id="profile-name" maxlength="12" placeholder="例如：薯条脆脆"><button id="save-profile" type="button">保存设置</button></div>
+        <label class="preference-label" for="bedtime-goal"><span>最晚入睡时间</span><small>晚于此时间标记为未达标</small></label>
+        <div class="bedtime-goal-row"><input type="time" id="bedtime-goal" value="22:00"><span>默认 22:00</span></div>
       </div>
       <p class="settings-copy">日常记录仅保存在当前浏览器中。你可以导出备份，或从备份文件恢复。</p>
       <div class="settings-actions">
