@@ -5,7 +5,6 @@
   var PROFILE_KEY = "mianji_profile_v1";
   var POOP_KEY = "mianji_poop_records_v1";
   var CALCIUM_KEY = "mianji_calcium_records_v1";
-  var GOAL_MINUTES = 7 * 60;
   var MAX_CHART_MINUTES = 10 * 60;
   var state = {
     records: loadRecords(),
@@ -258,10 +257,6 @@
     $("#trend-poop-days").textContent = new Set(periodPoop.map(function (r) { return r.date; })).size + " 天有记录";
     $("#trend-calcium").textContent = periodCalcium.reduce(function (sum, r) { return sum + Number(r.dose || 0); }, 0) + " mg";
     $("#trend-calcium-days").textContent = new Set(periodCalcium.map(function (r) { return r.date; })).size + " 天有记录";
-    $("#trend-chart-title").textContent = "最近 " + state.period + " 天";
-    renderTrendChart(data);
-    renderTiming(data);
-    renderInsight(data);
     renderCalendar();
   }
 
@@ -324,94 +319,6 @@
     if (deviation <= 60) return "较规律";
     if (deviation <= 90) return "有波动";
     return "需调整";
-  }
-
-  function renderTrendChart(records) {
-    var holder = $("#line-chart");
-    if (records.length < 2) {
-      holder.innerHTML = '<div class="empty-chart">至少记录 2 天后显示趋势曲线</div>';
-      return;
-    }
-    var sorted = records.slice().sort(function (a, b) { return a.date.localeCompare(b.date); });
-    var width = 340;
-    var height = 180;
-    var left = 22;
-    var right = 10;
-    var top = 14;
-    var bottom = 28;
-    var usableW = width - left - right;
-    var usableH = height - top - bottom;
-    var minM = 4 * 60;
-    var maxM = 11 * 60;
-    var points = sorted.map(function (r, index) {
-      var x = left + (sorted.length === 1 ? usableW / 2 : index / (sorted.length - 1) * usableW);
-      var clipped = Math.max(minM, Math.min(maxM, sleepMinutes(r)));
-      var y = top + (maxM - clipped) / (maxM - minM) * usableH;
-      return { x: x, y: y, record: r };
-    });
-    var path = points.map(function (p, i) { return (i ? "L" : "M") + p.x.toFixed(1) + " " + p.y.toFixed(1); }).join(" ");
-    var areaPath = path + " L " + points[points.length - 1].x.toFixed(1) + " " + (top + usableH) + " L " + points[0].x.toFixed(1) + " " + (top + usableH) + " Z";
-    var labels = [5, 8, 11].map(function (hour) {
-      var y = top + (maxM - hour * 60) / (maxM - minM) * usableH;
-      return '<line class="chart-grid-line" x1="' + left + '" y1="' + y + '" x2="' + (width - right) + '" y2="' + y + '"/><text class="chart-axis-label" x="0" y="' + (y + 3) + '">' + hour + 'h</text>';
-    }).join("");
-    var pointHtml = points.map(function (p, i) {
-      var label = "";
-      if (sorted.length <= 10 || i === 0 || i === sorted.length - 1) {
-        var d = parseDateKey(p.record.date);
-        label = '<text class="chart-axis-label" text-anchor="middle" x="' + p.x + '" y="' + (height - 4) + '">' + (d.getMonth() + 1) + "/" + d.getDate() + "</text>";
-      }
-      return '<circle class="chart-point" cx="' + p.x + '" cy="' + p.y + '" r="3.5"><title>' + compactDuration(sleepMinutes(p.record)) + '</title></circle>' + label;
-    }).join("");
-    holder.innerHTML = '<svg viewBox="0 0 ' + width + " " + height + '" role="img" aria-label="睡眠时长趋势图"><defs><linearGradient id="areaGradient" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#75b296" stop-opacity=".28"/><stop offset="1" stop-color="#75b296" stop-opacity="0"/></linearGradient></defs>' + labels + '<path class="chart-area" d="' + areaPath + '"/><path class="chart-path" d="' + path + '"/>' + pointHtml + "</svg>";
-  }
-
-  function circularAverage(minutesArray) {
-    if (!minutesArray.length) return null;
-    var sin = 0;
-    var cos = 0;
-    minutesArray.forEach(function (minutes) {
-      var angle = minutes / 1440 * Math.PI * 2;
-      sin += Math.sin(angle);
-      cos += Math.cos(angle);
-    });
-    var angle = Math.atan2(sin / minutesArray.length, cos / minutesArray.length);
-    if (angle < 0) angle += Math.PI * 2;
-    return Math.round(angle / (Math.PI * 2) * 1440) % 1440;
-  }
-
-  function minutesToClock(minutes) {
-    if (minutes === null) return "--:--";
-    return String(Math.floor(minutes / 60) % 24).padStart(2, "0") + ":" + String(minutes % 60).padStart(2, "0");
-  }
-
-  function renderTiming(records) {
-    var bed = circularAverage(records.map(function (r) { return timeToMinutes(r.bedtime); }));
-    var wake = circularAverage(records.map(function (r) { return timeToMinutes(r.waketime); }));
-    $("#avg-bedtime").textContent = minutesToClock(bed);
-    $("#avg-waketime").textContent = minutesToClock(wake);
-    $("#timing-span").style.width = records.length ? "100%" : "0";
-  }
-
-  function renderInsight(records) {
-    var title = "开始记录你的睡眠";
-    var text = "连续记录几天后，这里会出现关于睡眠时长与规律度的个性化提示。";
-    if (records.length >= 2) {
-      var avg = average(records.map(sleepMinutes));
-      var goalDays = records.filter(function (r) { return sleepMinutes(r) >= GOAL_MINUTES; }).length;
-      if (avg < 6 * 60) {
-        title = "最近睡眠偏少";
-        text = "平均睡眠不足 6 小时。可以尝试把上床时间提前 20–30 分钟，先从小幅调整开始。";
-      } else if (goalDays / records.length >= .7) {
-        title = "你的睡眠时长很稳定";
-        text = "多数记录达到了 7 小时目标。继续保持相近的入睡和起床时间，会更有利于稳定节律。";
-      } else {
-        title = "试着让作息更规律";
-        text = "目前睡眠时长有一些波动。优先固定起床时间，通常比强迫自己按时入睡更容易坚持。";
-      }
-    }
-    $("#insight-title").textContent = title;
-    $("#insight-text").textContent = text;
   }
 
   function formatShortDate(key) {
@@ -831,6 +738,16 @@
     });
   }
 
+  function lockViewportZoom() {
+    ["gesturestart", "gesturechange", "gestureend"].forEach(function (eventName) {
+      document.addEventListener(eventName, function (event) { event.preventDefault(); }, { passive: false });
+    });
+    document.addEventListener("touchmove", function (event) {
+      if (event.scale && event.scale !== 1) event.preventDefault();
+    }, { passive: false });
+  }
+
+  lockViewportZoom();
   bindEvents();
   render();
 })();

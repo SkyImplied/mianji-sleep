@@ -2,12 +2,12 @@
 <html lang="zh-CN">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no, viewport-fit=cover">
   <meta name="theme-color" content="#f7f1e8">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <title>薯条脆脆专属 · 日常健康手帐</title>
-  <link rel="stylesheet" href="styles.css?v=3">
+  <link rel="stylesheet" href="styles.css?v=4">
 </head>
 <body>
   <div class="app-shell">
@@ -92,7 +92,6 @@
       </section>
 
       <section class="view" id="view-trends" aria-labelledby="nav-trends">
-        <div class="page-heading"><p class="eyebrow">数据洞察</p><h2>睡眠趋势</h2><p>了解节律，比追求单日完美更重要。</p></div>
         <div class="period-switch" role="tablist" aria-label="统计周期">
           <button class="active" data-period="7">7 天</button>
           <button data-period="30">30 天</button>
@@ -120,20 +119,6 @@
           <div class="calendar-weekdays"><span>一</span><span>二</span><span>三</span><span>四</span><span>五</span><span>六</span><span>日</span></div>
           <div class="calendar-grid" id="calendar-grid"></div>
           <div class="calendar-legend" id="calendar-legend"></div>
-        </article>
-        <article class="trend-card">
-          <div class="card-title-row"><div><small>睡眠时长</small><h3 id="trend-chart-title">最近 7 天</h3></div><span class="goal-chip">目标 8h</span></div>
-          <div class="line-chart" id="line-chart"></div>
-        </article>
-        <article class="insight-card" id="insight-card">
-          <span class="insight-mark">✦</span>
-          <div><small>眠迹观察</small><h3 id="insight-title">开始记录你的睡眠</h3><p id="insight-text">连续记录几天后，这里会出现关于睡眠时长与规律度的个性化提示。</p></div>
-        </article>
-        <article class="timing-card">
-          <div class="section-heading compact"><div><p class="eyebrow">作息时间</p><h2>平均入睡与起床</h2></div></div>
-          <div class="timing-row"><span><i class="night-dot"></i>平均入睡</span><strong id="avg-bedtime">--:--</strong></div>
-          <div class="timing-line"><span id="timing-span"></span></div>
-          <div class="timing-row"><span><i class="morning-dot"></i>平均起床</span><strong id="avg-waketime">--:--</strong></div>
         </article>
       </section>
 
@@ -247,6 +232,6 @@
   </div>
 
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
-  <script src="app.js?v=3"></script>
+  <script src="app.js?v=4"></script>
 </body>
 </html>
