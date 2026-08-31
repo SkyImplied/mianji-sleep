@@ -2,16 +2,53 @@
   "use strict";
 
   var STORAGE_KEY = "mianji_sleep_records_v1";
+  var PROFILE_KEY = "mianji_profile_v1";
+  var POOP_KEY = "mianji_poop_records_v1";
+  var CALCIUM_KEY = "mianji_calcium_records_v1";
   var GOAL_MINUTES = 7 * 60;
   var MAX_CHART_MINUTES = 10 * 60;
   var state = {
     records: loadRecords(),
+    poopRecords: loadPoopRecords(),
+    calciumRecords: loadCalciumRecords(),
+    profileName: loadProfileName(),
     period: 7,
     activeView: "today"
   };
 
   var $ = function (selector) { return document.querySelector(selector); };
   var $$ = function (selector) { return Array.from(document.querySelectorAll(selector)); };
+
+  function loadProfileName() {
+    try {
+      var saved = JSON.parse(localStorage.getItem(PROFILE_KEY) || "{}");
+      return String(saved.name || "薯条脆脆").trim().slice(0, 12) || "薯条脆脆";
+    } catch (error) {
+      return "薯条脆脆";
+    }
+  }
+
+  function loadPoopRecords() {
+    try {
+      var raw = JSON.parse(localStorage.getItem(POOP_KEY) || "[]");
+      return Array.isArray(raw) ? raw.filter(function (r) { return r && r.date && r.time; }) : [];
+    } catch (error) {
+      return [];
+    }
+  }
+
+  function loadCalciumRecords() {
+    try {
+      var raw = JSON.parse(localStorage.getItem(CALCIUM_KEY) || "[]");
+      return Array.isArray(raw) ? raw.filter(function (r) { return r && r.date && r.time && Number(r.dose) > 0; }) : [];
+    } catch (error) {
+      return [];
+    }
+  }
+
+  function saveProfileName() {
+    localStorage.setItem(PROFILE_KEY, JSON.stringify({ name: state.profileName }));
+  }
 
   function localDateKey(date) {
     var y = date.getFullYear();
@@ -49,6 +86,13 @@
   function saveRecords() {
     state.records.sort(function (a, b) { return b.date.localeCompare(a.date); });
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state.records));
+  }
+
+  function saveWellnessRecords() {
+    state.poopRecords.sort(function (a, b) { return (b.date + b.time).localeCompare(a.date + a.time); });
+    state.calciumRecords.sort(function (a, b) { return (b.date + b.time).localeCompare(a.date + a.time); });
+    localStorage.setItem(POOP_KEY, JSON.stringify(state.poopRecords));
+    localStorage.setItem(CALCIUM_KEY, JSON.stringify(state.calciumRecords));
   }
 
   function timeToMinutes(value) {
@@ -109,6 +153,9 @@
   function renderHeader() {
     var now = new Date();
     $("#today-label").textContent = (now.getMonth() + 1) + "月" + now.getDate() + "日 · 星期" + weekdayLabel(now);
+    $("#display-name").textContent = state.profileName;
+    $("#profile-name").value = state.profileName;
+    document.title = state.profileName + "专属 · 日常健康手帐";
   }
 
   function latestRecord() {
@@ -134,7 +181,14 @@
     var recent = recordsWithin(7);
     var avg = average(recent.map(sleepMinutes));
     $("#metric-average").textContent = avg === null ? "--" : compactDuration(Math.round(avg));
-    $("#metric-goal").textContent = recent.filter(function (r) { return sleepMinutes(r) >= GOAL_MINUTES; }).length + " 天";
+    var todayKey = localDateKey(new Date());
+    var todayPoop = state.poopRecords.filter(function (r) { return r.date === todayKey; });
+    var todayCalcium = state.calciumRecords.filter(function (r) { return r.date === todayKey; });
+    var calciumTotal = todayCalcium.reduce(function (sum, r) { return sum + Number(r.dose || 0); }, 0);
+    $("#metric-poop").textContent = todayPoop.length + " 次";
+    $("#metric-poop-note").textContent = todayPoop.length ? "今日已记录" : "等待记录";
+    $("#metric-calcium").textContent = calciumTotal + " mg";
+    $("#metric-calcium-note").textContent = todayCalcium.length ? todayCalcium.length + " 次补充" : "等待记录";
     renderWeekBars(recent);
   }
 
@@ -163,12 +217,20 @@
 
   function renderTrends() {
     var data = recordsWithin(state.period);
+    var periodStart = localDateKey(shiftDate(new Date(), -(state.period - 1)));
+    var periodEnd = localDateKey(new Date());
+    var periodPoop = state.poopRecords.filter(function (r) { return r.date >= periodStart && r.date <= periodEnd; });
+    var periodCalcium = state.calciumRecords.filter(function (r) { return r.date >= periodStart && r.date <= periodEnd; });
     var durations = data.map(sleepMinutes);
     var avg = average(durations);
     var avgQuality = average(data.map(function (r) { return Number(r.quality) || 3; }));
     $("#trend-average").textContent = avg === null ? "--" : compactDuration(Math.round(avg));
     $("#trend-quality").textContent = avgQuality === null ? "--" : avgQuality.toFixed(1) + "/5";
     $("#trend-consistency").textContent = consistencyLabel(data);
+    $("#trend-poop").textContent = periodPoop.length + " 次";
+    $("#trend-poop-days").textContent = new Set(periodPoop.map(function (r) { return r.date; })).size + " 天有记录";
+    $("#trend-calcium").textContent = periodCalcium.reduce(function (sum, r) { return sum + Number(r.dose || 0); }, 0) + " mg";
+    $("#trend-calcium-days").textContent = new Set(periodCalcium.map(function (r) { return r.date; })).size + " 天有记录";
     $("#trend-chart-title").textContent = "最近 " + state.period + " 天";
     renderTrendChart(data);
     renderTiming(data);
@@ -285,23 +347,36 @@
 
   function renderHistory() {
     var list = $("#history-list");
-    $("#history-count").textContent = state.records.length ? "共 " + state.records.length + " 条记录" : "还没有记录";
-    if (!state.records.length) {
-      list.innerHTML = '<div class="empty-state"><div class="empty-moon"></div><h3>从今晚开始</h3><p>记录入睡与起床时间，<br>慢慢看见自己的睡眠节律。</p></div>';
+    var events = [];
+    state.records.forEach(function (r) { events.push({ type: "sleep", date: r.date, time: r.bedtime, data: r }); });
+    state.poopRecords.forEach(function (r) { events.push({ type: "poop", date: r.date, time: r.time, data: r }); });
+    state.calciumRecords.forEach(function (r) { events.push({ type: "calcium", date: r.date, time: r.time, data: r }); });
+    events.sort(function (a, b) { return (b.date + b.time).localeCompare(a.date + a.time); });
+    $("#history-count").textContent = events.length ? "共 " + events.length + " 条日常记录" : "还没有记录";
+    if (!events.length) {
+      list.innerHTML = '<div class="empty-state"><div class="empty-moon"></div><h3>从今天开始</h3><p>睡眠、噗噗和补钙，<br>小小记录也会变成有用的节律。</p></div>';
       return;
     }
     var groups = {};
-    state.records.forEach(function (record) {
-      var key = record.date.slice(0, 7);
+    events.forEach(function (event) {
+      var key = event.date.slice(0, 7);
       if (!groups[key]) groups[key] = [];
-      groups[key].push(record);
+      groups[key].push(event);
     });
     list.innerHTML = Object.keys(groups).sort().reverse().map(function (monthKey) {
       var parts = monthKey.split("-");
       var title = parts[0] + "年" + Number(parts[1]) + "月";
-      var items = groups[monthKey].map(function (record) {
-        var date = parseDateKey(record.date);
-        return '<button class="history-item" data-edit="' + record.id + '"><span class="date-tile"><strong>' + date.getDate() + '</strong><small>周' + weekdayLabel(date) + '</small></span><span class="history-main"><strong>' + record.bedtime + ' → ' + record.waketime + '</strong><small>' + (record.note ? escapeHtml(record.note) : "无备注") + '</small></span><span class="history-duration"><strong>' + compactDuration(sleepMinutes(record)) + '</strong><small>' + qualityStars(record.quality) + "</small></span></button>";
+      var items = groups[monthKey].map(function (event) {
+        var record = event.data;
+        var date = parseDateKey(event.date);
+        var dateTile = '<span class="date-tile ' + event.type + '-tile"><strong>' + date.getDate() + '</strong><small>周' + weekdayLabel(date) + '</small></span>';
+        if (event.type === "sleep") {
+          return '<button class="history-item" data-edit="' + record.id + '">' + dateTile + '<span class="history-main"><i class="event-tag">睡眠</i><strong>' + record.bedtime + ' → ' + record.waketime + '</strong><small>' + (record.note ? escapeHtml(record.note) : "无备注") + '</small></span><span class="history-duration"><strong>' + compactDuration(sleepMinutes(record)) + '</strong><small>' + qualityStars(record.quality) + "</small></span></button>";
+        }
+        if (event.type === "poop") {
+          return '<button class="history-item" data-edit-poop="' + record.id + '">' + dateTile + '<span class="history-main"><i class="event-tag poop-tag">噗噗</i><strong>' + record.time + ' · ' + escapeHtml(record.condition || "正常") + '</strong><small>' + (record.note ? escapeHtml(record.note) : "顺利完成一次") + '</small></span><span class="history-duration"><strong>1 次</strong><small>已记录</small></span></button>';
+        }
+        return '<button class="history-item" data-edit-calcium="' + record.id + '">' + dateTile + '<span class="history-main"><i class="event-tag calcium-tag">补钙</i><strong>' + record.time + ' · ' + Number(record.dose) + ' mg</strong><small>' + (record.note ? escapeHtml(record.note) : "补钙打卡") + '</small></span><span class="history-duration"><strong>' + Number(record.dose) + '</strong><small>mg</small></span></button>';
       }).join("");
       return '<section><h3 class="month-title">' + title + '</h3><div class="history-group">' + items + "</div></section>";
     }).join("");
@@ -338,9 +413,44 @@
     document.body.style.overflow = "hidden";
   }
 
+  function currentTimeValue() {
+    var now = new Date();
+    return String(now.getHours()).padStart(2, "0") + ":" + String(now.getMinutes()).padStart(2, "0");
+  }
+
+  function openPoopSheet(record) {
+    var isEdit = Boolean(record);
+    $("#poop-eyebrow").textContent = isEdit ? "编辑" : "新增";
+    $("#poop-title").textContent = isEdit ? "编辑噗噗记录" : "记录噗噗";
+    $("#poop-edit-id").value = isEdit ? record.id : "";
+    $("#poop-date").value = isEdit ? record.date : localDateKey(new Date());
+    $("#poop-time").value = isEdit ? record.time : currentTimeValue();
+    $("#poop-note").value = isEdit ? (record.note || "") : "";
+    var condition = isEdit ? (record.condition || "正常") : "正常";
+    var radio = $('input[name="poop-condition"][value="' + condition + '"]');
+    if (radio) radio.checked = true;
+    $("#delete-poop").hidden = !isEdit;
+    $("#poop-backdrop").hidden = false;
+    document.body.style.overflow = "hidden";
+  }
+
+  function openCalciumSheet(record) {
+    var isEdit = Boolean(record);
+    $("#calcium-eyebrow").textContent = isEdit ? "编辑" : "新增";
+    $("#calcium-title").textContent = isEdit ? "编辑补钙记录" : "记录补钙";
+    $("#calcium-edit-id").value = isEdit ? record.id : "";
+    $("#calcium-date").value = isEdit ? record.date : localDateKey(new Date());
+    $("#calcium-time").value = isEdit ? record.time : currentTimeValue();
+    $("#calcium-dose").value = isEdit ? Number(record.dose) : 500;
+    $("#calcium-note").value = isEdit ? (record.note || "") : "";
+    $("#delete-calcium").hidden = !isEdit;
+    $("#calcium-backdrop").hidden = false;
+    document.body.style.overflow = "hidden";
+  }
+
   function closeSheet(id) {
     $(id).hidden = true;
-    if ($("#record-backdrop").hidden && $("#settings-backdrop").hidden) document.body.style.overflow = "";
+    if ($("#record-backdrop").hidden && $("#poop-backdrop").hidden && $("#calcium-backdrop").hidden && $("#settings-backdrop").hidden) document.body.style.overflow = "";
   }
 
   function updateDurationPreview() {
@@ -394,8 +504,67 @@
     showToast("记录已删除");
   }
 
+  function handlePoopSubmit(event) {
+    event.preventDefault();
+    var entry = {
+      id: $("#poop-edit-id").value || "p" + Date.now(),
+      date: $("#poop-date").value,
+      time: $("#poop-time").value,
+      condition: $('input[name="poop-condition"]:checked').value,
+      note: $("#poop-note").value.trim()
+    };
+    state.poopRecords = state.poopRecords.filter(function (r) { return r.id !== entry.id; });
+    state.poopRecords.push(entry);
+    saveWellnessRecords();
+    closeSheet("#poop-backdrop");
+    render();
+    showToast("噗噗记录已保存");
+  }
+
+  function handleCalciumSubmit(event) {
+    event.preventDefault();
+    var dose = Number($("#calcium-dose").value);
+    if (!dose || dose < 1 || dose > 3000) {
+      showToast("请输入 1–3000 mg 的剂量");
+      return;
+    }
+    var entry = {
+      id: $("#calcium-edit-id").value || "c" + Date.now(),
+      date: $("#calcium-date").value,
+      time: $("#calcium-time").value,
+      dose: dose,
+      note: $("#calcium-note").value.trim()
+    };
+    state.calciumRecords = state.calciumRecords.filter(function (r) { return r.id !== entry.id; });
+    state.calciumRecords.push(entry);
+    saveWellnessRecords();
+    closeSheet("#calcium-backdrop");
+    render();
+    showToast("补钙记录已保存");
+  }
+
+  function deletePoopEntry() {
+    var id = $("#poop-edit-id").value;
+    if (!id || !window.confirm("确定删除这条噗噗记录吗？")) return;
+    state.poopRecords = state.poopRecords.filter(function (r) { return r.id !== id; });
+    saveWellnessRecords();
+    closeSheet("#poop-backdrop");
+    render();
+    showToast("噗噗记录已删除");
+  }
+
+  function deleteCalciumEntry() {
+    var id = $("#calcium-edit-id").value;
+    if (!id || !window.confirm("确定删除这条补钙记录吗？")) return;
+    state.calciumRecords = state.calciumRecords.filter(function (r) { return r.id !== id; });
+    saveWellnessRecords();
+    closeSheet("#calcium-backdrop");
+    render();
+    showToast("补钙记录已删除");
+  }
+
   function exportData() {
-    var payload = { app: "眠迹", version: 1, exportedAt: new Date().toISOString(), records: state.records };
+    var payload = { app: "眠迹", version: 3, profileName: state.profileName, exportedAt: new Date().toISOString(), records: state.records, poopRecords: state.poopRecords, calciumRecords: state.calciumRecords };
     var blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
     var url = URL.createObjectURL(blob);
     var link = document.createElement("a");
@@ -424,13 +593,30 @@
             note: String(r.note || "").slice(0, 80)
           };
         });
+        var poopRecords = !Array.isArray(parsed) && Array.isArray(parsed.poopRecords) ? parsed.poopRecords.filter(function (r) {
+          return r && r.date && r.time;
+        }).map(function (r) {
+          return { id: String(r.id || "p" + Date.now() + Math.random()), date: r.date, time: r.time, condition: String(r.condition || "正常"), note: String(r.note || "").slice(0, 80) };
+        }) : [];
+        var calciumRecords = !Array.isArray(parsed) && Array.isArray(parsed.calciumRecords) ? parsed.calciumRecords.filter(function (r) {
+          return r && r.date && r.time && Number(r.dose) > 0;
+        }).map(function (r) {
+          return { id: String(r.id || "c" + Date.now() + Math.random()), date: r.date, time: r.time, dose: Math.min(3000, Number(r.dose)), note: String(r.note || "").slice(0, 80) };
+        }) : [];
         var merged = {};
         state.records.concat(records).forEach(function (r) { merged[r.date] = r; });
         state.records = Object.keys(merged).map(function (key) { return merged[key]; });
+        state.poopRecords = state.poopRecords.concat(poopRecords);
+        state.calciumRecords = state.calciumRecords.concat(calciumRecords);
+        if (!Array.isArray(parsed) && parsed.profileName) {
+          state.profileName = String(parsed.profileName).trim().slice(0, 12) || state.profileName;
+          saveProfileName();
+        }
         saveRecords();
+        saveWellnessRecords();
         render();
         closeSheet("#settings-backdrop");
-        showToast("已导入 " + records.length + " 条记录");
+        showToast("已导入 " + (records.length + poopRecords.length + calciumRecords.length) + " 条记录");
       } catch (error) {
         showToast("无法识别这个备份文件");
       }
@@ -447,17 +633,37 @@
       button.addEventListener("click", function () { switchView(button.dataset.go); });
     });
     $("#quick-add").addEventListener("click", function () { openRecordSheet(); });
+    $("#quick-poop").addEventListener("click", function () { openPoopSheet(); });
+    $("#quick-calcium").addEventListener("click", function () { openCalciumSheet(); });
     $("#history-add").addEventListener("click", function () { openRecordSheet(); });
     $("#close-sheet").addEventListener("click", function () { closeSheet("#record-backdrop"); });
     $("#sleep-form").addEventListener("submit", handleSubmit);
     $("#bedtime").addEventListener("input", updateDurationPreview);
     $("#waketime").addEventListener("input", updateDurationPreview);
     $("#delete-entry").addEventListener("click", deleteCurrentEntry);
+    $("#close-poop").addEventListener("click", function () { closeSheet("#poop-backdrop"); });
+    $("#close-calcium").addEventListener("click", function () { closeSheet("#calcium-backdrop"); });
+    $("#poop-form").addEventListener("submit", handlePoopSubmit);
+    $("#calcium-form").addEventListener("submit", handleCalciumSubmit);
+    $("#delete-poop").addEventListener("click", deletePoopEntry);
+    $("#delete-calcium").addEventListener("click", deleteCalciumEntry);
+    $$("[data-dose]").forEach(function (button) {
+      button.addEventListener("click", function () { $("#calcium-dose").value = button.dataset.dose; });
+    });
     $("#history-list").addEventListener("click", function (event) {
-      var button = event.target.closest("[data-edit]");
-      if (!button) return;
-      var record = state.records.find(function (r) { return r.id === button.dataset.edit; });
-      if (record) openRecordSheet(record);
+      var sleepButton = event.target.closest("[data-edit]");
+      var poopButton = event.target.closest("[data-edit-poop]");
+      var calciumButton = event.target.closest("[data-edit-calcium]");
+      if (sleepButton) {
+        var sleepRecord = state.records.find(function (r) { return r.id === sleepButton.dataset.edit; });
+        if (sleepRecord) openRecordSheet(sleepRecord);
+      } else if (poopButton) {
+        var poopRecord = state.poopRecords.find(function (r) { return r.id === poopButton.dataset.editPoop; });
+        if (poopRecord) openPoopSheet(poopRecord);
+      } else if (calciumButton) {
+        var calciumRecord = state.calciumRecords.find(function (r) { return r.id === calciumButton.dataset.editCalcium; });
+        if (calciumRecord) openCalciumSheet(calciumRecord);
+      }
     });
     $$(".period-switch button").forEach(function (button) {
       button.addEventListener("click", function () {
@@ -467,22 +673,44 @@
       });
     });
     $("#open-settings").addEventListener("click", function () {
+      $("#profile-name").value = state.profileName;
       $("#settings-backdrop").hidden = false;
       document.body.style.overflow = "hidden";
+    });
+    $("#save-profile").addEventListener("click", function () {
+      var nextName = $("#profile-name").value.trim().slice(0, 12);
+      if (!nextName) {
+        showToast("请输入专属名称");
+        $("#profile-name").focus();
+        return;
+      }
+      state.profileName = nextName;
+      saveProfileName();
+      renderHeader();
+      showToast("专属名称已更新");
+    });
+    $("#profile-name").addEventListener("keydown", function (event) {
+      if (event.key === "Enter") {
+        event.preventDefault();
+        $("#save-profile").click();
+      }
     });
     $("#close-settings").addEventListener("click", function () { closeSheet("#settings-backdrop"); });
     $("#export-data").addEventListener("click", exportData);
     $("#import-data").addEventListener("change", function (event) { importData(event.target.files[0]); });
     $("#clear-data").addEventListener("click", function () {
-      if (!state.records.length) return showToast("当前没有可清空的数据");
-      if (!window.confirm("确定清空全部睡眠记录吗？此操作无法撤销。")) return;
+      if (!state.records.length && !state.poopRecords.length && !state.calciumRecords.length) return showToast("当前没有可清空的数据");
+      if (!window.confirm("确定清空全部日常记录吗？此操作无法撤销。")) return;
       state.records = [];
+      state.poopRecords = [];
+      state.calciumRecords = [];
       saveRecords();
+      saveWellnessRecords();
       render();
       closeSheet("#settings-backdrop");
       showToast("全部记录已清空");
     });
-    ["#record-backdrop", "#settings-backdrop"].forEach(function (id) {
+    ["#record-backdrop", "#poop-backdrop", "#calcium-backdrop", "#settings-backdrop"].forEach(function (id) {
       $(id).addEventListener("click", function (event) {
         if (event.target === $(id)) closeSheet(id);
       });
@@ -490,6 +718,8 @@
     document.addEventListener("keydown", function (event) {
       if (event.key !== "Escape") return;
       closeSheet("#record-backdrop");
+      closeSheet("#poop-backdrop");
+      closeSheet("#calcium-backdrop");
       closeSheet("#settings-backdrop");
     });
   }

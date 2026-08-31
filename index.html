@@ -3,20 +3,21 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta name="theme-color" content="#f4f3ef">
+  <meta name="theme-color" content="#f7f1e8">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
-  <title>眠迹 · 睡眠记录</title>
+  <title>薯条脆脆专属 · 日常健康手帐</title>
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
   <div class="app-shell">
     <header class="topbar">
-      <div>
+      <div class="brand-lockup">
         <p class="eyebrow" id="today-label"></p>
-        <h1>眠迹</h1>
+        <h1><span id="display-name">薯条脆脆</span><small>专属</small></h1>
+        <p class="brand-caption">日常健康手帐</p>
       </div>
-      <button class="icon-button" id="open-settings" aria-label="数据管理">
+      <button class="icon-button" id="open-settings" aria-label="设置与数据">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.4a1.8 1.8 0 0 1 1.7 1.2l.2.6a7.1 7.1 0 0 1 1.6.9l.6-.1a1.8 1.8 0 0 1 1.8.8l.7 1.2a1.8 1.8 0 0 1-.1 2l-.4.5a7.3 7.3 0 0 1 0 1.9l.4.5a1.8 1.8 0 0 1 .1 2l-.7 1.2a1.8 1.8 0 0 1-1.8.8l-.6-.1a7.1 7.1 0 0 1-1.6.9l-.2.6a1.8 1.8 0 0 1-1.7 1.2h-1.4a1.8 1.8 0 0 1-1.7-1.2l-.2-.6a7.1 7.1 0 0 1-1.6-.9l-.6.1a1.8 1.8 0 0 1-1.8-.8L4 14.9a1.8 1.8 0 0 1 .1-2l.4-.5a7.3 7.3 0 0 1 0-1.9l-.4-.5A1.8 1.8 0 0 1 4 8l.7-1.2A1.8 1.8 0 0 1 6.5 6l.6.1a7.1 7.1 0 0 1 1.6-.9l.2-.6a1.8 1.8 0 0 1 1.7-1.2H12Z"/><circle cx="11.3" cy="11.5" r="2.5"/></svg>
       </button>
     </header>
@@ -26,7 +27,7 @@
         <article class="hero-card">
           <div class="hero-glow"></div>
           <div class="hero-copy">
-            <span class="status-pill" id="hero-status">今晚还未记录</span>
+            <span class="status-pill"><i></i><span id="hero-status">今晚还未记录</span></span>
             <p class="hero-kicker">最近一次睡眠</p>
             <div class="duration-display">
               <strong id="hero-hours">--</strong>
@@ -42,25 +43,38 @@
           </div>
         </article>
 
-        <button class="primary-action" id="quick-add">
-          <span class="plus">＋</span>
-          <span><b>记录睡眠</b><small>约 10 秒完成</small></span>
-          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg>
-        </button>
+        <div class="quick-actions" aria-label="快捷记录">
+          <button class="quick-action sleep-action" id="quick-add">
+            <span class="quick-icon"><svg viewBox="0 0 24 24"><path d="M20 15.6A8.5 8.5 0 0 1 8.4 4a8.5 8.5 0 1 0 11.6 11.6Z"/></svg></span>
+            <span><b>睡眠</b><small>入睡与起床</small></span>
+          </button>
+          <button class="quick-action poop-action" id="quick-poop">
+            <span class="quick-icon poop-mark">噗</span>
+            <span><b>噗噗</b><small>时间与状态</small></span>
+          </button>
+          <button class="quick-action calcium-action" id="quick-calcium">
+            <span class="quick-icon calcium-mark">Ca</span>
+            <span><b>补钙</b><small>剂量与时间</small></span>
+          </button>
+        </div>
 
         <section class="section-block">
           <div class="section-heading">
-            <div><p class="eyebrow">本周概览</p><h2>你的睡眠节律</h2></div>
+            <div><p class="eyebrow">今日概览</p><h2>今天照顾好自己了吗</h2></div>
             <button class="text-button" data-go="trends">查看趋势</button>
           </div>
-          <div class="metric-grid">
+          <div class="metric-grid daily-metrics">
             <article class="metric-card">
               <span class="metric-icon warm"><svg viewBox="0 0 24 24"><path d="M20 15.6A8.5 8.5 0 0 1 8.4 4a8.5 8.5 0 1 0 11.6 11.6Z"/></svg></span>
               <p>平均睡眠</p><strong id="metric-average">--</strong><small>近 7 天</small>
             </article>
             <article class="metric-card">
-              <span class="metric-icon green"><svg viewBox="0 0 24 24"><path d="m5 12 4 4L19 6"/></svg></span>
-              <p>达标天数</p><strong id="metric-goal">0 天</strong><small>目标 ≥ 7小时</small>
+              <span class="metric-icon poop-mini">噗</span>
+              <p>今日噗噗</p><strong id="metric-poop">0 次</strong><small id="metric-poop-note">等待记录</small>
+            </article>
+            <article class="metric-card">
+              <span class="metric-icon calcium-mini">Ca</span>
+              <p>今日补钙</p><strong id="metric-calcium">0 mg</strong><small id="metric-calcium-note">等待记录</small>
             </article>
           </div>
         </section>
@@ -89,6 +103,10 @@
           <article><small>平均质量</small><strong id="trend-quality">--</strong><em>主观评分</em></article>
           <article><small>规律度</small><strong id="trend-consistency">--</strong><em>入睡波动</em></article>
         </div>
+        <div class="wellness-stat-grid">
+          <article><span class="wellness-badge poop-mark">噗</span><div><small>本周期噗噗</small><strong id="trend-poop">0 次</strong><em id="trend-poop-days">0 天有记录</em></div></article>
+          <article><span class="wellness-badge calcium-mark">Ca</span><div><small>本周期补钙</small><strong id="trend-calcium">0 mg</strong><em id="trend-calcium-days">0 天有记录</em></div></article>
+        </div>
         <article class="trend-card">
           <div class="card-title-row"><div><small>睡眠时长</small><h3 id="trend-chart-title">最近 7 天</h3></div><span class="goal-chip">目标 8h</span></div>
           <div class="line-chart" id="line-chart"></div>
@@ -107,7 +125,7 @@
 
       <section class="view" id="view-history" aria-labelledby="nav-history">
         <div class="page-heading history-heading">
-          <div><p class="eyebrow">时间线</p><h2>睡眠记录</h2><p id="history-count">还没有记录</p></div>
+          <div><p class="eyebrow">时间线</p><h2>日常记录</h2><p id="history-count">还没有记录</p></div>
           <button class="round-add" id="history-add" aria-label="添加记录">＋</button>
         </div>
         <div class="history-list" id="history-list"></div>
@@ -158,12 +176,58 @@
     <section class="bottom-sheet settings-sheet" role="dialog" aria-modal="true" aria-labelledby="settings-title">
       <div class="sheet-handle"></div>
       <div class="sheet-header"><div><p class="eyebrow">本地数据</p><h2 id="settings-title">数据管理</h2></div><button class="close-button" id="close-settings" aria-label="关闭">×</button></div>
-      <p class="settings-copy">记录仅保存在当前浏览器中。你可以导出备份，或从备份文件恢复。</p>
+      <div class="profile-settings">
+        <label for="profile-name"><span>专属名称</span><small>显示在首页，最多 12 个字</small></label>
+        <div class="profile-input-row"><input type="text" id="profile-name" maxlength="12" placeholder="例如：薯条脆脆"><button id="save-profile" type="button">保存</button></div>
+      </div>
+      <p class="settings-copy">日常记录仅保存在当前浏览器中。你可以导出备份，或从备份文件恢复。</p>
       <div class="settings-actions">
-        <button id="export-data"><span>导出 JSON 备份</span><small>保存全部睡眠记录</small></button>
-        <label class="import-label"><span>导入 JSON 备份</span><small>合并同日期记录</small><input type="file" id="import-data" accept=".json,application/json"></label>
+        <button id="export-data"><span>导出 JSON 备份</span><small>保存全部日常记录</small></button>
+        <label class="import-label"><span>导入 JSON 备份</span><small>恢复三类记录与专属名称</small><input type="file" id="import-data" accept=".json,application/json"></label>
         <button class="danger-row" id="clear-data"><span>清空全部数据</span><small>此操作无法撤销</small></button>
       </div>
+    </section>
+  </div>
+
+  <div class="sheet-backdrop" id="poop-backdrop" hidden>
+    <section class="bottom-sheet compact-sheet" role="dialog" aria-modal="true" aria-labelledby="poop-title">
+      <div class="sheet-handle"></div>
+      <div class="sheet-header"><div><p class="eyebrow" id="poop-eyebrow">新增</p><h2 id="poop-title">记录噗噗</h2></div><button class="close-button" id="close-poop" aria-label="关闭">×</button></div>
+      <form id="poop-form">
+        <input type="hidden" id="poop-edit-id">
+        <div class="form-two-col">
+          <label class="form-field"><span>日期</span><input type="date" id="poop-date" required></label>
+          <label class="form-field"><span>时间</span><input type="time" id="poop-time" required></label>
+        </div>
+        <fieldset class="choice-field"><legend>状态</legend><div class="condition-options">
+          <input type="radio" name="poop-condition" value="偏硬" id="p-hard"><label for="p-hard">偏硬</label>
+          <input type="radio" name="poop-condition" value="正常" id="p-normal" checked><label for="p-normal">正常</label>
+          <input type="radio" name="poop-condition" value="偏软" id="p-soft"><label for="p-soft">偏软</label>
+          <input type="radio" name="poop-condition" value="不适" id="p-unwell"><label for="p-unwell">不适</label>
+        </div></fieldset>
+        <label class="form-field"><span>备注 <small>选填</small></span><textarea id="poop-note" rows="2" maxlength="80" placeholder="例如：很顺畅、肚子有点不舒服"></textarea></label>
+        <button class="save-button" type="submit">保存噗噗记录</button>
+        <button class="delete-button" type="button" id="delete-poop" hidden>删除这条记录</button>
+      </form>
+    </section>
+  </div>
+
+  <div class="sheet-backdrop" id="calcium-backdrop" hidden>
+    <section class="bottom-sheet compact-sheet" role="dialog" aria-modal="true" aria-labelledby="calcium-title">
+      <div class="sheet-handle"></div>
+      <div class="sheet-header"><div><p class="eyebrow" id="calcium-eyebrow">新增</p><h2 id="calcium-title">记录补钙</h2></div><button class="close-button" id="close-calcium" aria-label="关闭">×</button></div>
+      <form id="calcium-form">
+        <input type="hidden" id="calcium-edit-id">
+        <div class="form-two-col">
+          <label class="form-field"><span>日期</span><input type="date" id="calcium-date" required></label>
+          <label class="form-field"><span>时间</span><input type="time" id="calcium-time" required></label>
+        </div>
+        <label class="form-field"><span>补钙剂量（mg）</span><input type="number" id="calcium-dose" min="1" max="3000" step="1" value="500" inputmode="numeric" required></label>
+        <div class="dose-presets" aria-label="常用剂量"><button type="button" data-dose="300">300 mg</button><button type="button" data-dose="500">500 mg</button><button type="button" data-dose="600">600 mg</button></div>
+        <label class="form-field"><span>备注 <small>选填</small></span><textarea id="calcium-note" rows="2" maxlength="80" placeholder="例如：钙片、牛奶、饭后服用"></textarea></label>
+        <button class="save-button" type="submit">保存补钙记录</button>
+        <button class="delete-button" type="button" id="delete-calcium" hidden>删除这条记录</button>
+      </form>
     </section>
   </div>
 
