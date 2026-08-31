@@ -191,6 +191,7 @@
 
   function updateDocumentTitle() {
     var viewNames = { today: "今日", trends: "趋势", history: "记录" };
+    document.body.dataset.view = state.activeView;
     document.title = (viewNames[state.activeView] || "今日") + " · " + state.profileName + "专属";
   }
 
@@ -821,8 +822,20 @@
     });
   }
 
+  function registerServiceWorker() {
+    if (!("serviceWorker" in navigator)) return;
+    var isSecureOrigin = location.protocol === "https:" || location.hostname === "localhost" || location.hostname === "127.0.0.1";
+    if (!isSecureOrigin) return;
+    window.addEventListener("load", function () {
+      navigator.serviceWorker.register("./sw.js").catch(function () {
+        /* The online app remains usable if offline setup is unavailable. */
+      });
+    });
+  }
+
   lockViewportZoom();
   bindEvents();
   render();
   requestPersistentStorage();
+  registerServiceWorker();
 })();
