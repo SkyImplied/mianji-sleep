@@ -1,0 +1,14 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>准备分页测试数据</title>
+<script>
+  fetch("history-fixture.json")
+    .then(function (response) { return response.json(); })
+    .then(function (data) {
+      localStorage.setItem("mianji_sleep_records_v1", JSON.stringify(data.records || []));
+      localStorage.setItem("mianji_poop_records_v1", JSON.stringify(data.poopRecords || []));
+      localStorage.setItem("mianji_calcium_records_v1", JSON.stringify(data.calciumRecords || []));
+      localStorage.setItem("mianji_profile_v1", JSON.stringify({ name: data.profileName, bedtimeGoal: data.bedtimeGoal }));
+      location.replace("../../index.html");
+    });
+</script>

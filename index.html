@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no, viewport-fit=cover">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
   <meta name="theme-color" content="#f7f1e8">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
@@ -12,18 +12,19 @@
   <link rel="manifest" href="manifest.webmanifest?v=1">
   <link rel="apple-touch-icon" sizes="180x180" href="icons/apple-touch-icon.png?v=1">
   <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png?v=1">
-  <link rel="stylesheet" href="styles.css?v=7">
+  <link rel="stylesheet" href="styles.css?v=12">
 </head>
 <body>
   <div class="app-shell">
     <header class="topbar">
       <div class="brand-lockup">
         <p class="eyebrow" id="today-label"></p>
-        <h1><span id="display-name">薯条脆脆</span><small>专属</small></h1>
+        <h1><button class="secret-name-trigger" id="display-name" type="button" aria-label="薯条脆脆" disabled>薯条脆脆</button><small>专属</small></h1>
         <p class="brand-caption">日常健康手帐</p>
       </div>
       <button class="icon-button" id="open-settings" aria-label="设置与数据">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.4a1.8 1.8 0 0 1 1.7 1.2l.2.6a7.1 7.1 0 0 1 1.6.9l.6-.1a1.8 1.8 0 0 1 1.8.8l.7 1.2a1.8 1.8 0 0 1-.1 2l-.4.5a7.3 7.3 0 0 1 0 1.9l.4.5a1.8 1.8 0 0 1 .1 2l-.7 1.2a1.8 1.8 0 0 1-1.8.8l-.6-.1a7.1 7.1 0 0 1-1.6.9l-.2.6a1.8 1.8 0 0 1-1.7 1.2h-1.4a1.8 1.8 0 0 1-1.7-1.2l-.2-.6a7.1 7.1 0 0 1-1.6-.9l-.6.1a1.8 1.8 0 0 1-1.8-.8L4 14.9a1.8 1.8 0 0 1 .1-2l.4-.5a7.3 7.3 0 0 1 0-1.9l-.4-.5A1.8 1.8 0 0 1 4 8l.7-1.2A1.8 1.8 0 0 1 6.5 6l.6.1a7.1 7.1 0 0 1 1.6-.9l.2-.6a1.8 1.8 0 0 1 1.7-1.2H12Z"/><circle cx="11.3" cy="11.5" r="2.5"/></svg>
+        <span class="cloud-indicator" id="cloud-indicator" aria-hidden="true"></span>
       </button>
     </header>
 
@@ -171,14 +172,27 @@
   <div class="sheet-backdrop" id="settings-backdrop" hidden>
     <section class="bottom-sheet settings-sheet" role="dialog" aria-modal="true" aria-labelledby="settings-title">
       <div class="sheet-handle"></div>
-      <div class="sheet-header"><div><p class="eyebrow">本地数据</p><h2 id="settings-title">数据管理</h2></div><button class="close-button" id="close-settings" aria-label="关闭">×</button></div>
+      <div class="sheet-header"><div><p class="eyebrow">个人数据</p><h2 id="settings-title">数据与同步</h2></div><button class="close-button" id="close-settings" aria-label="关闭">×</button></div>
+      <section class="cloud-card" id="cloud-card" aria-labelledby="cloud-status-label">
+        <div class="cloud-card-heading">
+          <span class="cloud-status-mark" id="cloud-status-mark" aria-hidden="true"></span>
+          <div><h3 id="cloud-status-label">正在检查云端状态</h3><p id="cloud-account" hidden></p></div>
+        </div>
+        <p class="cloud-status-copy" id="cloud-status-copy" role="status" aria-live="polite">本机记录不受影响。</p>
+        <p class="cloud-error" id="cloud-error" role="alert" hidden></p>
+        <div class="cloud-actions">
+          <button class="cloud-primary" id="cloud-login" type="button" hidden>登录 CloudBase</button>
+          <button class="cloud-primary" id="cloud-sync" type="button" hidden>立即同步</button>
+          <button class="cloud-secondary" id="cloud-logout" type="button" hidden>退出登录</button>
+        </div>
+      </section>
       <div class="profile-settings">
         <label for="profile-name"><span>专属名称</span><small>显示在首页，最多 12 个字</small></label>
         <div class="profile-input-row"><input type="text" id="profile-name" maxlength="12" placeholder="例如：薯条脆脆"><button id="save-profile" type="button">保存设置</button></div>
         <label class="preference-label" for="bedtime-goal"><span>最晚入睡时间</span><small>晚于此时间标记为未达标</small></label>
         <div class="bedtime-goal-row"><input type="time" id="bedtime-goal" value="22:00"><span>默认 22:00</span></div>
       </div>
-      <p class="settings-copy">记录默认保存在当前浏览器或主屏幕应用中。建议定期把备份存入 iCloud 云盘或“在我的 iPhone 上”，避免清除网站数据或删除应用后丢失。</p>
+      <p class="settings-copy">应用始终保留一份本机数据。登录 CloudBase 后可以跨设备同步；JSON 备份仍可作为独立的手动备份。</p>
       <div class="settings-actions">
         <button id="export-data"><span>保存备份到文件</span><small id="backup-file-name">薯条脆脆健康记录_2026-08-31.json</small></button>
         <label class="import-label"><span>导入 JSON 备份</span><small>恢复三类记录与专属名称</small><input type="file" id="import-data" accept=".json,application/json"></label>
@@ -238,7 +252,56 @@
     </section>
   </div>
 
+  <div class="sheet-backdrop secret-backdrop" id="secret-backdrop" hidden>
+    <section class="secret-dialog" role="dialog" aria-modal="true" aria-labelledby="secret-title" aria-describedby="secret-message">
+      <span class="secret-mark" aria-hidden="true">♥</span>
+      <p class="eyebrow">给你的悄悄话</p>
+      <h2 id="secret-title">藏在名字里的消息</h2>
+      <p id="secret-message">希望你过好每一天！我喜欢你！来自sky的隐藏消息。</p>
+      <button class="secret-close" id="close-secret" type="button">收下这句话</button>
+    </section>
+  </div>
+
+  <div class="sheet-backdrop account-backdrop" id="login-backdrop" hidden>
+    <section class="account-dialog" role="dialog" aria-modal="true" aria-labelledby="login-title" aria-describedby="login-copy">
+      <button class="dialog-close" id="close-login" type="button" aria-label="关闭登录窗口">×</button>
+      <span class="account-mark" aria-hidden="true">☁</span>
+      <p class="eyebrow">CloudBase</p>
+      <h2 id="login-title">登录云端同步</h2>
+      <p id="login-copy">新手机号验证后会自动创建账户，已有用户也可以直接登录。</p>
+      <div class="login-method-switch" role="tablist" aria-label="选择登录方式">
+        <button id="login-method-sms" type="button" role="tab" aria-selected="true" aria-controls="sms-login-form">短信验证码</button>
+        <button id="login-method-password" type="button" role="tab" aria-selected="false" aria-controls="password-login-form" tabindex="-1">账号密码</button>
+      </div>
+      <form id="sms-login-form" role="tabpanel" aria-labelledby="login-method-sms" novalidate>
+        <div class="account-field"><label for="cloud-phone">手机号</label><input id="cloud-phone" name="phone" type="tel" inputmode="tel" autocomplete="tel" maxlength="20" placeholder="请输入中国大陆手机号" aria-describedby="sms-login-hint sms-login-error" required></div>
+        <div class="account-field"><label for="cloud-otp">短信验证码</label><span class="sms-code-row"><input id="cloud-otp" name="otp" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="8" placeholder="请输入验证码" aria-describedby="sms-login-hint sms-login-error" required><button id="send-cloud-otp" type="button">获取验证码</button></span></div>
+        <p class="sms-login-hint" id="sms-login-hint">首次使用这个手机号时，会自动创建一个独立的云端账户。</p>
+        <p class="form-error" id="sms-login-error" role="alert" hidden></p>
+        <button class="account-submit" id="sms-login-submit" type="submit">手机号登录</button>
+      </form>
+      <form id="password-login-form" role="tabpanel" aria-labelledby="login-method-password" novalidate hidden>
+        <div class="account-field"><label for="cloud-username">用户名</label><input id="cloud-username" name="username" type="text" autocomplete="username" autocapitalize="none" spellcheck="false" aria-describedby="login-error" required></div>
+        <div class="account-field"><label for="cloud-password">密码</label><span class="password-wrap"><input id="cloud-password" name="password" type="password" autocomplete="current-password" aria-describedby="login-error" required><button id="toggle-cloud-password" type="button" aria-pressed="false" aria-label="显示密码">显示</button></span></div>
+        <p class="form-error" id="login-error" role="alert" hidden></p>
+        <button class="account-submit" id="login-submit" type="submit">账号登录</button>
+      </form>
+    </section>
+  </div>
+
+  <div class="sheet-backdrop account-backdrop" id="migration-backdrop" hidden>
+    <section class="account-dialog migration-dialog" role="dialog" aria-modal="true" aria-labelledby="migration-title" aria-describedby="migration-copy">
+      <span class="account-mark migration-mark" aria-hidden="true">↥</span>
+      <p class="eyebrow">首次同步</p>
+      <h2 id="migration-title">合并本机与云端记录</h2>
+      <p id="migration-copy">本机现有记录。开始同步会合并两边的数据，不会先清空任何一边。</p>
+      <div class="migration-actions"><button id="migration-later" type="button">以后再说</button><button class="account-submit" id="migration-start" type="button">合并并上传</button></div>
+    </section>
+  </div>
+
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
-  <script src="app.js?v=7"></script>
+  <script src="cloud-config.js?v=1"></script>
+  <script defer src="https://static.cloudbase.net/cloudbase-js-sdk/3.9.0/cloudbase.full.js"></script>
+  <script defer src="app.js?v=11"></script>
 </body>
 </html>

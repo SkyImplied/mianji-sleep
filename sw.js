@@ -1,12 +1,13 @@
 "use strict";
 
 var CACHE_PREFIX = "mianji-sleep-shell-";
-var CACHE_NAME = CACHE_PREFIX + "v7";
+var CACHE_NAME = CACHE_PREFIX + "v12";
 var APP_SHELL = [
   "./",
   "./index.html",
-  "./styles.css?v=7",
-  "./app.js?v=7",
+  "./styles.css?v=12",
+  "./cloud-config.js?v=1",
+  "./app.js?v=11",
   "./manifest.webmanifest?v=1",
   "./icons/apple-touch-icon.png?v=1",
   "./icons/icon-192.png?v=1",
@@ -48,7 +49,8 @@ self.addEventListener("fetch", function (event) {
     event.respondWith(
       fetch(request)
         .then(function (response) {
-          if (response.ok) {
+          var isAppEntry = url.pathname.endsWith("/") || url.pathname.endsWith("/index.html");
+          if (response.ok && isAppEntry) {
             var copy = response.clone();
             caches.open(CACHE_NAME).then(function (cache) {
               cache.put("./index.html", copy);

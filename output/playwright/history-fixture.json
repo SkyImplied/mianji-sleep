@@ -1,0 +1,33 @@
+{
+  "app": "分页测试数据",
+  "version": 5,
+  "profileName": "薯条脆脆",
+  "bedtimeGoal": "22:00",
+  "records": [
+    {"id":"test-s01","date":"2026-08-31","bedtime":"22:10","waketime":"07:00","quality":4,"note":"分页测试 01"},
+    {"id":"test-s02","date":"2026-08-30","bedtime":"22:20","waketime":"07:10","quality":4,"note":"分页测试 02"},
+    {"id":"test-s03","date":"2026-08-29","bedtime":"22:30","waketime":"07:20","quality":4,"note":"分页测试 03"},
+    {"id":"test-s04","date":"2026-08-28","bedtime":"22:40","waketime":"07:30","quality":4,"note":"分页测试 04"},
+    {"id":"test-s05","date":"2026-08-27","bedtime":"22:50","waketime":"07:40","quality":4,"note":"分页测试 05"},
+    {"id":"test-s06","date":"2026-08-26","bedtime":"23:00","waketime":"07:50","quality":3,"note":"分页测试 06"},
+    {"id":"test-s07","date":"2026-08-25","bedtime":"23:10","waketime":"08:00","quality":3,"note":"分页测试 07"},
+    {"id":"test-s08","date":"2026-08-24","bedtime":"23:20","waketime":"08:10","quality":3,"note":"分页测试 08"},
+    {"id":"test-s09","date":"2026-08-23","bedtime":"23:30","waketime":"08:20","quality":3,"note":"分页测试 09"},
+    {"id":"test-s10","date":"2026-08-22","bedtime":"23:40","waketime":"08:30","quality":3,"note":"分页测试 10"},
+    {"id":"test-s11","date":"2026-08-21","bedtime":"22:15","waketime":"07:05","quality":5,"note":"分页测试 11"},
+    {"id":"test-s12","date":"2026-08-20","bedtime":"22:25","waketime":"07:15","quality":5,"note":"分页测试 12"},
+    {"id":"test-s13","date":"2026-08-19","bedtime":"22:35","waketime":"07:25","quality":5,"note":"分页测试 13"},
+    {"id":"test-s14","date":"2026-08-18","bedtime":"22:45","waketime":"07:35","quality":4,"note":"分页测试 14"},
+    {"id":"test-s15","date":"2026-08-17","bedtime":"22:55","waketime":"07:45","quality":4,"note":"分页测试 15"},
+    {"id":"test-s16","date":"2026-08-16","bedtime":"23:05","waketime":"07:55","quality":4,"note":"分页测试 16"},
+    {"id":"test-s17","date":"2026-08-15","bedtime":"23:15","waketime":"08:05","quality":3,"note":"分页测试 17"},
+    {"id":"test-s18","date":"2026-08-14","bedtime":"23:25","waketime":"08:15","quality":3,"note":"分页测试 18"},
+    {"id":"test-s19","date":"2026-08-13","bedtime":"23:35","waketime":"08:25","quality":3,"note":"分页测试 19"},
+    {"id":"test-s20","date":"2026-08-12","bedtime":"23:45","waketime":"08:35","quality":3,"note":"分页测试 20"},
+    {"id":"test-s21","date":"2026-07-31","bedtime":"22:05","waketime":"06:55","quality":5,"note":"分页测试 21"},
+    {"id":"test-s22","date":"2026-07-30","bedtime":"22:15","waketime":"07:05","quality":5,"note":"分页测试 22"},
+    {"id":"test-s23","date":"2026-07-29","bedtime":"22:25","waketime":"07:15","quality":4,"note":"分页测试 23"}
+  ],
+  "poopRecords": [],
+  "calciumRecords": []
+}
